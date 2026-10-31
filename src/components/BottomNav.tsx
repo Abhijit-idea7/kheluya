@@ -1,33 +1,39 @@
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Home, Puzzle, ShoppingBag, Info } from 'lucide-react';
-
-const items = [
-  { to: '/', key: 'nav.home', Icon: Home },
-  { to: '/kodi', key: 'nav.kodi', Icon: Puzzle },
-  { to: '/dukan', key: 'nav.dukan', Icon: ShoppingBag },
-  { to: '/amchyabaddal', key: 'nav.about', Icon: Info },
-] as const;
+import { navItems } from '@/components/navItems';
 
 export default function BottomNav() {
   const { t } = useTranslation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-paper border-t-2 border-line">
+    <nav
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-paper border-t-[3px] border-ink pb-[env(safe-area-inset-bottom)]"
+      aria-label={t('nav.label')}
+    >
       <ul className="max-w-content mx-auto grid grid-cols-4">
-        {items.map(({ to, key, Icon }) => (
+        {navItems.map(({ to, key, Icon }) => (
           <li key={to}>
             <NavLink
               to={to}
               end={to === '/'}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center gap-1 min-h-touch py-2 w-full ${
-                  isActive ? 'text-orange' : 'text-ink'
+                `flex flex-col items-center justify-center gap-0.5 min-h-[4.25rem] py-1.5 w-full font-heading font-bold ${
+                  isActive ? 'text-ink' : 'text-ink/75'
                 }`
               }
             >
-              <Icon size={24} aria-hidden="true" />
-              <span className="text-sm leading-none">{t(key)}</span>
+              {({ isActive }) => (
+                <>
+                  <span
+                    className={`grid place-items-center h-9 w-14 rounded-full ${
+                      isActive ? 'bg-orange border-2 border-ink' : ''
+                    }`}
+                  >
+                    <Icon size={24} strokeWidth={2.4} aria-hidden="true" />
+                  </span>
+                  <span className="text-base leading-none">{t(key)}</span>
+                </>
+              )}
             </NavLink>
           </li>
         ))}

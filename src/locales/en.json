@@ -11,7 +11,8 @@
     "home": "Home",
     "kodi": "Puzzles",
     "dukan": "Shop",
-    "about": "Info"
+    "about": "Info",
+    "label": "Main menu"
   },
   "back": "Back",
   "footer": {
@@ -19,15 +20,64 @@
     "terms": "Terms & Conditions",
     "shipping": "Shipping Policy",
     "refunds": "Refund Policy",
-    "siteLine": "chalakheluya.com · kheluya.in"
+    "siteLine": "chalakheluya.com · kheluya.in",
+    "howToPlay": "How to play",
+    "families": "For families",
+    "about": "About us",
+    "contact": "Contact",
+    "notify": "Get new puzzles",
+    "explore": "Play",
+    "aboutUs": "About",
+    "policies": "Policies",
+    "tagline": "One Marathi puzzle a day. Big letters, no sign-up, just play."
   },
   "home": {
-    "heading": "Home",
-    "description": "New puzzles, games and fun every day — all in Marathi, in large letters.",
     "hero": {
-      "title": "Today's Puzzle",
-      "puzzleName": "Akshar-Sudoku",
-      "cta": "Play today's puzzle"
+      "title": "One puzzle a day keeps the mind fresh.",
+      "sub": "Marathi crosswords, letter sudoku and proverb puzzles. Big letters, on your phone, nothing to download."
+    },
+    "today": {
+      "label": "Today's puzzle · {{day}}",
+      "play": "Play today's puzzle",
+      "share": "Send on WhatsApp",
+      "shareText": "Today's puzzle: {{name}}. Chala Kheluya!"
+    },
+    "week": {
+      "title": "This week's puzzles",
+      "sub": "A new puzzle every morning. Catch up on any you missed.",
+      "today": "Today",
+      "all": "See all puzzles"
+    },
+    "how": {
+      "title": "How does it work?",
+      "s1": {
+        "title": "Open the link",
+        "body": "Tap the link you got on WhatsApp. Nothing to download."
+      },
+      "s2": {
+        "title": "Play with a finger",
+        "body": "Tap the letters. No Marathi keyboard needed."
+      },
+      "s3": {
+        "title": "Share with friends",
+        "body": "When you solve it, send your result on WhatsApp."
+      }
+    },
+    "family": {
+      "title": "Send Aai and Baba a puzzle every day",
+      "body": "One link is all it takes. Big letters, sounds and help if they get stuck are all inside the puzzle.",
+      "cta": "See how to send it"
+    },
+    "shop": {
+      "soon": "Soon",
+      "title": "The puzzle book is coming",
+      "body": "100 puzzles in large print, solved with a pen. A lovely gift too.",
+      "cta": "Tell me when it arrives"
+    },
+    "notify": {
+      "title": "Want a new puzzle on WhatsApp every day?",
+      "body": "Leave your number. We will only send puzzles and book news.",
+      "cta": "Leave my number"
     }
   },
   "pages": {

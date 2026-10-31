@@ -13,9 +13,79 @@ html.text-large {
 @layer base {
   body {
     @apply font-body text-body-base leading-body bg-cream text-ink;
+    /* faint paper speckle, like the logo's background */
+    background-image: radial-gradient(rgba(16, 35, 63, 0.05) 1px, transparent 1px);
+    background-size: 22px 22px;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading;
+    @apply font-heading font-extrabold text-ink;
+  }
+
+  :focus-visible {
+    outline: 4px solid #F39200;
+    outline-offset: 3px;
+    border-radius: 12px;
+  }
+}
+
+@layer components {
+  /* Outlined "sticker" surfaces, drawn the way the logo is drawn */
+  .sticker {
+    @apply bg-paper border-[3px] border-ink rounded-3xl shadow-sticker-lg;
+  }
+
+  /* Big pressable buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-3 min-h-touch px-6 py-3 rounded-2xl border-[3px] border-ink
+      font-heading font-bold text-heading-sm leading-none shadow-sticker transition-transform;
+  }
+  .btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 1px 0 0 #10233F;
+  }
+  .btn-primary { @apply bg-orange text-ink; }
+  .btn-whatsapp { @apply bg-green text-white; }
+  .btn-quiet { @apply bg-paper text-ink; }
+
+  /* Wooden akshara tile from the logo */
+  .tile {
+    @apply inline-grid place-items-center font-heading font-extrabold text-ink select-none;
+    background: linear-gradient(180deg, #F6DCA8 0%, #EDCB8E 60%, #E2B874 100%);
+    border: 2px solid #8C5E25;
+    border-radius: 14px;
+    box-shadow: inset 0 -6px 0 #C99550, inset 0 2px 0 rgba(255, 255, 255, 0.55), 0 4px 0 #6E4818;
+    line-height: 1;
+  }
+  .tile-today {
+    background: linear-gradient(180deg, #FFC15A 0%, #F39200 100%);
+    border-color: #10233F;
+    box-shadow: inset 0 -6px 0 #C46F00, inset 0 2px 0 rgba(255, 255, 255, 0.5), 0 4px 0 #10233F;
+  }
+
+  /* Sun rays behind the illustration */
+  .rays {
+    background: repeating-conic-gradient(from 0deg, #FFD9A0 0deg 7deg, transparent 7deg 18deg);
+    -webkit-mask-image: radial-gradient(circle at center, #000 18%, transparent 68%);
+    mask-image: radial-gradient(circle at center, #000 18%, transparent 68%);
+  }
+
+  /* Crossword-grid corner on the today card */
+  .grid-corner {
+    background-image:
+      linear-gradient(#10233F 2px, transparent 2px),
+      linear-gradient(90deg, #10233F 2px, transparent 2px);
+    background-size: 26px 26px;
+    opacity: 0.08;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pop-in {
+    animation: pop-in 0.7s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  }
+  @keyframes pop-in {
+    from { transform: scale(0.9) rotate(-2deg); opacity: 0; }
+    to { transform: scale(1) rotate(0); opacity: 1; }
   }
 }

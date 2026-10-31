@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Link, NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { readTextLarge, writeTextLarge, applyTextLargeToDocument } from '@/utils/textSize';
+import { LANG_STORAGE_KEY } from '@/i18n';
+import { navItems } from '@/components/navItems';
 
 export default function Header() {
   const { t, i18n } = useTranslation();
@@ -16,31 +19,62 @@ export default function Header() {
     i18n.changeLanguage(next);
     document.documentElement.lang = next;
     try {
-      localStorage.setItem('chala-kheluya-lang', next);
+      localStorage.setItem(LANG_STORAGE_KEY, next);
     } catch {
       // localStorage unavailable
     }
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-paper border-b border-line">
-      <div className="max-w-content mx-auto px-4 py-2 flex items-center justify-between gap-3">
-        <img src="/brand/logo-strip.webp" alt={t('app.logoAlt')} className="h-14 w-auto" />
-        <div className="flex items-center gap-2">
+    <header className="sticky top-0 z-30 bg-paper/95 backdrop-blur border-b-[3px] border-ink">
+      <div className="max-w-site mx-auto px-3 sm:px-5 py-2 flex items-center gap-3">
+        <Link to="/" className="shrink min-w-0" aria-label={t('nav.home')}>
+          <img
+            src="/brand/logo-strip.webp"
+            alt={t('app.logoAlt')}
+            width={426}
+            height={80}
+            className="h-11 sm:h-14 w-auto max-w-full"
+          />
+        </Link>
+
+        <nav className="hidden lg:block ml-6" aria-label={t('nav.label')}>
+          <ul className="flex items-center gap-1">
+            {navItems.map(({ to, key }) => (
+              <li key={to}>
+                <NavLink
+                  to={to}
+                  end={to === '/'}
+                  className={({ isActive }) =>
+                    `flex items-center min-h-touch px-4 rounded-2xl font-heading font-bold text-[1.35rem] ${
+                      isActive ? 'bg-orange-soft text-ink' : 'text-ink hover:bg-cream'
+                    }`
+                  }
+                >
+                  {t(key)}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div className="ml-auto flex items-center gap-2 shrink-0">
           <button
             onClick={toggleLang}
-            className="min-h-touch px-4 rounded-xl bg-cream border-2 border-line text-ink font-heading text-heading-sm leading-none"
+            className="min-h-[3rem] px-3 sm:px-4 rounded-2xl bg-paper border-[3px] border-ink font-heading font-bold text-lg leading-none"
             aria-label={t('lang.label')}
           >
             {i18n.language === 'mr' ? t('app.switchToEnglish') : t('app.switchToMarathi')}
           </button>
           <button
             onClick={() => setTextLarge((v) => !v)}
-            className="min-h-touch min-w-touch px-4 rounded-xl bg-navy text-white font-heading text-heading-sm leading-none border-2 border-navy"
+            className={`min-h-[3rem] min-w-[3rem] px-3 rounded-2xl border-[3px] border-ink font-heading font-extrabold text-xl leading-none ${
+              textLarge ? 'bg-orange text-ink' : 'bg-navy text-white'
+            }`}
             aria-pressed={textLarge}
             aria-label={textLarge ? t('app.textSizeOn') : t('app.textSize')}
           >
-            अ+
+            {textLarge ? 'अ−' : 'अ+'}
           </button>
         </div>
       </div>
