@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import type { Puzzle, PuzzleType } from '@/lib/types';
@@ -25,6 +25,8 @@ export default function AdminPuzzleEdit() {
   const [types, setTypes] = useState<PuzzleType[]>([]);
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [form, setForm] = useState<Form>(empty);
+  const formRef = useRef<Form>(empty);
+  formRef.current = form;
   const [file, setFile] = useState<File | null>(null);
   const [prepared, setPrepared] = useState<Prepared | null>(null);
   const [fileError, setFileError] = useState('');
@@ -59,13 +61,35 @@ export default function AdminPuzzleEdit() {
     try {
       const prep = await prepareUpload(f);
       setPrepared(prep);
-      const { meta, error } = await metaFromPrepared(prep);
-      if (error) return setMetaNote({ ok: false, text: error });
-      if (!meta) return setMetaNote({ ok: false, text: 'This file has no details block, so please fill in the details below.' });
-      const type = meta.type
-        ? types.find((t) => t.slug === meta.type || t.name_mr === meta.type || t.name_en.toLowerCase() === meta.type!.toLowerCase())
-        : undefined;
-      setForm((cur) => ({
+      await fillFromFile(prep);
+    } catch (e) {
+      setFileError((e as Error).message);
+    }
+  };
+
+  /** Read the file's ck-meta block and merge it into the form. Returns the merged form (or null). */
+  const fillFromFile = async (prep: Prepared): Promise<Form | null> => {
+    const { meta, error } = await metaFromPrepared(prep);
+    if (error) {
+      setMetaNote({ ok: false, text: error });
+      return null;
+    }
+    if (!meta) {
+      setMetaNote({ ok: false, text: 'This file has no details block, so please fill in the details below.' });
+      return null;
+    }
+    let allTypes = types;
+    if (!allTypes.length) {
+      const { data } = await supabase!.from('puzzle_types').select('*').order('sort_order');
+      allTypes = (data ?? []) as PuzzleType[];
+      setTypes(allTypes);
+    }
+    const want = (meta.type ?? '').toLowerCase();
+    const type = want
+      ? allTypes.find((t) => t.slug.toLowerCase() === want || t.name_mr === meta.type || t.name_en.toLowerCase() === want)
+      : undefined;
+    const cur = formRef.current;
+    const merged: Form = {
         ...cur,
         type_id: type?.id ?? cur.type_id,
         name_mr: meta.name_mr ?? cur.name_mr,
@@ -77,18 +101,23 @@ export default function AdminPuzzleEdit() {
         time_en: meta.time_en ?? cur.time_en,
         keywords: meta.keywords ?? cur.keywords,
         live_date: meta.live_date ?? cur.live_date,
-      }));
-      if (meta.type && !type)
-        setMetaNote({ ok: false, text: `Details filled from the file, but the puzzle type "${meta.type}" does not exist yet. Add it under Puzzle types, or pick a type below.` });
-      else
-        setMetaNote({ ok: true, text: `Details filled from the file${meta.live_date ? ', including a suggested live date' : ''}. Check them, set the date and status, and save.` });
-    } catch (e) {
-      setFileError((e as Error).message);
-    }
+    };
+    formRef.current = merged;
+    setForm(merged);
+    if (meta.type && !type)
+      setMetaNote({ ok: false, text: `Details filled from the file, but the puzzle type "${meta.type}" does not exist yet. Add it under Puzzle types, or pick a type below.` });
+    else
+      setMetaNote({ ok: true, text: `Details filled from the file${meta.live_date ? ', including a suggested live date' : ''}. Check them, set the date and status, and save.` });
+    return merged;
   };
 
   const save = async () => {
     setMsg(null);
+    let form = formRef.current;
+    if (prepared && (!form.name_mr.trim() || !form.type_id)) {
+      const merged = await fillFromFile(prepared);
+      if (merged) form = merged;
+    }
     if (!form.name_mr.trim()) return setMsg({ ok: false, text: 'Marathi name is required.' });
     if (!form.type_id) return setMsg({ ok: false, text: 'Choose a puzzle type.' });
     if (form.status === 'live' && !form.live_date) return setMsg({ ok: false, text: 'A live puzzle needs a live date.' });

@@ -104,6 +104,7 @@ function Shell({ children, nav }: { children: React.ReactNode; nav?: React.React
             <img src="/brand/logo-mark.webp" alt="चला खेळूया" width={250} height={80} className="h-10 w-auto" />
           </a>
           <span className="font-heading font-extrabold text-xl">Admin</span>
+          <span className="text-xs text-ink/55" title="When this version was built (India time)">Version {__BUILD_STAMP__}</span>
           {nav}
         </div>
       </header>
