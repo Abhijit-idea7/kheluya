@@ -6,6 +6,7 @@ import { istToday } from '@/lib/dates';
 import { Badge, btnDanger, btnPrimary, btnQuiet, Card, Field, input } from '@/admin/ui';
 import { prepareUpload, removePuzzleFiles, uploadPrepared, type Prepared } from '@/admin/upload';
 import { statusOf } from '@/admin/AdminPuzzles';
+import { metaFromPrepared } from '@/admin/puzzleMeta';
 
 type Form = Pick<
   Puzzle,
@@ -27,6 +28,7 @@ export default function AdminPuzzleEdit() {
   const [file, setFile] = useState<File | null>(null);
   const [prepared, setPrepared] = useState<Prepared | null>(null);
   const [fileError, setFileError] = useState('');
+  const [metaNote, setMetaNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [previewKey, setPreviewKey] = useState(0);
@@ -52,9 +54,34 @@ export default function AdminPuzzleEdit() {
     setFile(f);
     setPrepared(null);
     setFileError('');
+    setMetaNote(null);
     if (!f) return;
     try {
-      setPrepared(await prepareUpload(f));
+      const prep = await prepareUpload(f);
+      setPrepared(prep);
+      const { meta, error } = await metaFromPrepared(prep);
+      if (error) return setMetaNote({ ok: false, text: error });
+      if (!meta) return setMetaNote({ ok: false, text: 'This file has no details block, so please fill in the details below.' });
+      const type = meta.type
+        ? types.find((t) => t.slug === meta.type || t.name_mr === meta.type || t.name_en.toLowerCase() === meta.type!.toLowerCase())
+        : undefined;
+      setForm((cur) => ({
+        ...cur,
+        type_id: type?.id ?? cur.type_id,
+        name_mr: meta.name_mr ?? cur.name_mr,
+        name_en: meta.name_en ?? cur.name_en,
+        about_mr: meta.about_mr ?? cur.about_mr,
+        about_en: meta.about_en ?? cur.about_en,
+        difficulty: meta.difficulty ?? cur.difficulty,
+        time_mr: meta.time_mr ?? cur.time_mr,
+        time_en: meta.time_en ?? cur.time_en,
+        keywords: meta.keywords ?? cur.keywords,
+        live_date: meta.live_date ?? cur.live_date,
+      }));
+      if (meta.type && !type)
+        setMetaNote({ ok: false, text: `Details filled from the file, but the puzzle type "${meta.type}" does not exist yet. Add it under Puzzle types, or pick a type below.` });
+      else
+        setMetaNote({ ok: true, text: `Details filled from the file${meta.live_date ? ', including a suggested live date' : ''}. Check them, set the date and status, and save.` });
     } catch (e) {
       setFileError((e as Error).message);
     }
@@ -159,6 +186,11 @@ export default function AdminPuzzleEdit() {
               </p>
             )}
             {fileError && <p className="mt-2 text-sm font-bold text-[#8A1C14]">{fileError}</p>}
+            {metaNote && (
+              <p className={`mt-2 rounded-xl p-2.5 text-sm font-bold ${metaNote.ok ? 'bg-green-soft text-[#1F5E2A]' : 'bg-orange-soft text-[#7A4300]'}`}>
+                {metaNote.text}
+              </p>
+            )}
           </Card>
 
           <Card>
