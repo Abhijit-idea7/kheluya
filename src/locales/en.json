@@ -1,0 +1,126 @@
+{
+  "app": {
+    "name": "Chala Kheluya",
+    "logoAlt": "Chala Kheluya",
+    "textSize": "Increase text size",
+    "textSizeOn": "Decrease text size",
+    "switchToEnglish": "English",
+    "switchToMarathi": "मराठी"
+  },
+  "nav": {
+    "home": "Home",
+    "kodi": "Puzzles",
+    "dukan": "Shop",
+    "about": "Info"
+  },
+  "back": "Back",
+  "footer": {
+    "privacy": "Privacy Policy",
+    "terms": "Terms & Conditions",
+    "shipping": "Shipping Policy",
+    "refunds": "Refund Policy",
+    "siteLine": "chalakheluya.com · kheluya.in"
+  },
+  "home": {
+    "heading": "Home",
+    "description": "New puzzles, games and fun every day — all in Marathi, in large letters.",
+    "hero": {
+      "title": "Today's Puzzle",
+      "puzzleName": "Akshar-Sudoku",
+      "cta": "Play today's puzzle"
+    }
+  },
+  "pages": {
+    "kodi": {
+      "heading": "All Puzzles",
+      "description": "A list of all puzzles — one new puzzle every day and all older puzzles here."
+    },
+    "prakar": {
+      "heading": "Puzzle Type",
+      "description": "All puzzles of one type — for example Akshar-Sudoku, word puzzles or number puzzles."
+    },
+    "kodiEk": {
+      "heading": "Puzzle",
+      "description": "A page to play one specific puzzle — question, hints and checking the answer."
+    },
+    "khel": {
+      "heading": "Game",
+      "description": "Other small games — a page to play one specific game."
+    },
+    "madat": {
+      "heading": "How to Play",
+      "description": "Simple Marathi guidance, step by step, on how to play each puzzle and game."
+    },
+    "kutumb": {
+      "heading": "For Families",
+      "description": "Ideas and tips for playing together with grandparents and grandchildren."
+    },
+    "amchyabaddal": {
+      "heading": "About Us",
+      "description": "Who makes Chala Kheluya, why, and what we aim to do."
+    },
+    "sampark": {
+      "heading": "Contact",
+      "description": "Ways to reach us — phone, email and address."
+    },
+    "suchana": {
+      "heading": "Suggest New Puzzles",
+      "description": "Send puzzles you have made — if we like them, we will publish them on the site."
+    },
+    "dukan": {
+      "heading": "Shop",
+      "description": "Coming soon",
+      "comingSoon": "Coming soon"
+    },
+    "dukanProduct": {
+      "heading": "Product",
+      "description": "A page for one shop item — photo, price and how to buy."
+    },
+    "pishvi": {
+      "heading": "Bag",
+      "description": "A list of the items you are buying — check before going to checkout."
+    },
+    "checkout": {
+      "heading": "Checkout",
+      "description": "A page to enter your address and complete the order."
+    },
+    "order": {
+      "heading": "Order",
+      "description": "Details of one specific order — status, bill and shipping details."
+    },
+    "majhiOrder": {
+      "heading": "My Orders",
+      "description": "A list of all your past orders."
+    },
+    "admin": {
+      "heading": "Admin",
+      "description": "Team only — a page to manage puzzles, games and orders."
+    }
+  },
+  "dhoran": {
+    "privacy": {
+      "heading": "Privacy Policy",
+      "description": "What information we collect and how we use it."
+    },
+    "terms": {
+      "heading": "Terms & Conditions",
+      "description": "The rules for using the site and your rights."
+    },
+    "shipping": {
+      "heading": "Shipping Policy",
+      "description": "How orders are sent and how many days they take."
+    },
+    "refunds": {
+      "heading": "Refund Policy",
+      "description": "How to return items and get your money back."
+    }
+  },
+  "notFound": {
+    "heading": "Oops! Page not found",
+    "description": "The page you are looking for is not here. Let's go back home and play.",
+    "cta": "Go to home page"
+  },
+  "lang": {
+    "label": "Language"
+  }
+}
