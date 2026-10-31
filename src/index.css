@@ -89,3 +89,24 @@ html.text-large {
     to { transform: scale(1) rotate(0); opacity: 1; }
   }
 }
+
+/* ===== Share block v2 — identical to the one inside every puzzle (Puzzle Standard: Sharing) ===== */
+@layer components {
+  .cks-h { @apply m-0 text-center font-heading font-extrabold text-xl text-ink; }
+  .cks-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .cks {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 64px; padding: 8px 4px;
+    border: 2px solid #10233f; border-radius: 14px; box-shadow: 0 3px 0 #10233f; color: #fff; text-decoration: none; cursor: pointer;
+    font: 800 15px/1.1 Mukta, "Baloo 2", system-ui, sans-serif; -webkit-tap-highlight-color: transparent;
+  }
+  .cks svg { width: 26px; height: 26px; }
+  .cks:active { transform: translateY(2px); box-shadow: 0 1px 0 #10233f; }
+  .cks.wa { background: #1DA851; }
+  .cks.fb { background: #1877F2; }
+  .cks.ig { background: linear-gradient(45deg, #F58529, #DD2A7B 55%, #8134AF); }
+  .cks-link {
+    align-self: center; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 10px; background: none; border: 0;
+    color: #10233f; font: 700 16px Mukta, system-ui, sans-serif; text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+  }
+  .cks-link svg { width: 18px; height: 18px; }
+}

@@ -23,9 +23,12 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 /** A 1080×1350 picture for Instagram / Status: logo, puzzle name, invite line and short link. */
 export async function makeShareCard(p: Puzzle, lines: { kicker: string; invite: string }): Promise<Blob> {
   await document.fonts?.ready;
+  const logo = await loadImage('/brand/logo-hero.webp');
+  const lw = 900;
+  const lh = (logo.height / logo.width) * lw;
   const c = document.createElement('canvas');
   c.width = 1080;
-  c.height = 1350;
+  c.height = Math.round(120 + lh + 50 + 520 + 110);
   const ctx = c.getContext('2d')!;
   ctx.fillStyle = '#F6F1E4';
   ctx.fillRect(0, 0, c.width, c.height);
@@ -45,9 +48,6 @@ export async function makeShareCard(p: Puzzle, lines: { kicker: string; invite: 
   }
   ctx.restore();
 
-  const logo = await loadImage('/brand/logo-hero.webp');
-  const lw = 900;
-  const lh = (logo.height / logo.width) * lw;
   ctx.drawImage(logo, (1080 - lw) / 2, 120, lw, lh);
 
   // card
