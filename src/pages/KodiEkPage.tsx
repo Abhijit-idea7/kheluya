@@ -1,15 +1,16 @@
 import { useEffect, useMemo } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Clock, Calendar, Gauge, Play } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, Gauge, Play, Timer, Trophy } from 'lucide-react';
 import Tile from '@/components/Tile';
 import PuzzleCard from '@/components/PuzzleCard';
 import ShareButtons from '@/components/ShareButtons';
 import Illustration from '@/components/Illustration';
-import { getLivePuzzles, getPlayCounts, getPuzzleByNumber } from '@/lib/api';
+import { getLivePuzzles, getPlayCounts, getPuzzleByNumber, getTimeStats } from '@/lib/api';
+import { myTime } from '@/lib/myTimes';
 import { useAsync } from '@/lib/useAsync';
 import { pick, type Lang } from '@/lib/types';
-import { dayName, istToday, mrDigits, prettyDate } from '@/lib/dates';
+import { dayName, formatDuration, istToday, mrDigits, prettyDate } from '@/lib/dates';
 import { newSessionId, readRef, track } from '@/lib/track';
 
 export default function KodiEkPage() {
@@ -26,6 +27,7 @@ export default function KodiEkPage() {
     [puzzle?.id],
   );
   const { data: counts } = useAsync(() => getPlayCounts(), []);
+  const { data: times } = useAsync(() => (puzzle ? getTimeStats(puzzle.id) : Promise.resolve(null)), [puzzle?.id]);
 
   // A visitor who came from a shared link
   useEffect(() => {
@@ -50,6 +52,7 @@ export default function KodiEkPage() {
 
   const isToday = puzzle.live_date === istToday();
   const plays = counts?.[puzzle.id];
+  const mine = myTime(puzzle.id);
   const how = puzzle.type ? pick(puzzle.type, 'how', lang) : '';
   const others = (more ?? []).filter((p) => p.id !== puzzle.id).slice(0, 3);
 
@@ -91,6 +94,18 @@ export default function KodiEkPage() {
               <Gauge size={22} strokeWidth={2.4} aria-hidden="true" />
               {t(`difficulty.${puzzle.difficulty}`)}
             </li>
+            {times?.median_ms != null && (
+              <li className="flex items-center gap-3">
+                <Timer size={22} strokeWidth={2.4} aria-hidden="true" />
+                {t('time.typical', { t: formatDuration(times.median_ms, lang) })}
+              </li>
+            )}
+            {mine != null && (
+              <li className="flex items-center gap-3 font-bold text-green">
+                <Trophy size={22} strokeWidth={2.4} aria-hidden="true" />
+                {t('time.yours', { t: formatDuration(mine, lang) })}
+              </li>
+            )}
             {plays != null && plays > 0 && (
               <li className="font-bold text-green">{t('puzzle.solvedBy', { n: numTxt(plays.toLocaleString('en-IN')) })}</li>
             )}

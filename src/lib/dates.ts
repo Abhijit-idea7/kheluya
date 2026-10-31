@@ -40,9 +40,14 @@ export function prettyDate(iso: string, lang: 'mr' | 'en'): string {
 
 export function formatDuration(ms: number | null | undefined, lang: 'mr' | 'en'): string {
   if (ms == null) return '–';
-  const s = Math.round(ms / 1000);
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  const txt = lang === 'mr' ? `${m} मि ${r} से` : `${m}m ${r}s`;
+  const total = Math.max(1, Math.round(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const sec = total % 60;
+  const parts =
+    lang === 'mr'
+      ? [h ? `${h} तास` : '', m ? `${m} मि` : '', !h && sec ? `${sec} से` : '']
+      : [h ? `${h}h` : '', m ? `${m}m` : '', !h && sec ? `${sec}s` : ''];
+  const txt = parts.filter(Boolean).join(' ');
   return lang === 'mr' ? mrDigits(txt) : txt;
 }

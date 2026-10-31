@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
-import { getPuzzleByNumber } from '@/lib/api';
+import { getPuzzleByNumber, getTimeStats } from '@/lib/api';
+import { saveMyTime } from '@/lib/myTimes';
+import { formatDuration } from '@/lib/dates';
 import { publicFileUrl } from '@/lib/supabase';
 import { preparePuzzleHtml } from '@/lib/bridge';
 import { newSessionId, readRef, track, type Channel } from '@/lib/track';
@@ -76,6 +78,22 @@ export default function KhelPage() {
           track({ puzzle_id: pid, session_id: sessionId, event: 'started' });
         }
         track({ puzzle_id: pid, session_id: sessionId, event: 'completed', value_ms: m.time_ms, mistakes: m.mistakes, hints: m.hints });
+        if (typeof m.time_ms === 'number' && m.time_ms >= 1000) {
+          const ms = m.time_ms;
+          saveMyTime(pid, ms);
+          getTimeStats(pid).then((st) => {
+            frameRef.current?.contentWindow?.postMessage(
+              {
+                __ckHost: 1,
+                type: 'toast',
+                title: t('time.yoursShort', { t: formatDuration(ms, lang) }),
+                sub: st.median_ms != null ? t('time.typical', { t: formatDuration(st.median_ms, lang) }) : '',
+                close: t('time.close'),
+              },
+              '*',
+            );
+          });
+        }
       } else if (m.type === 'shared') {
         const ch = (CHANNELS as string[]).includes(m.channel ?? '') ? (m.channel as Channel) : 'other';
         track({ puzzle_id: pid, session_id: sessionId, event: 'shared', channel: ch, source: 'puzzle' });
@@ -103,7 +121,7 @@ export default function KhelPage() {
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('pagehide', flush);
     };
-  }, [puzzle, phase, search, sessionId]);
+  }, [puzzle, phase, search, sessionId, t, lang]);
 
   useEffect(() => {
     if (puzzle) document.title = `${pick(puzzle, 'name', lang)} · चला खेळूया`;

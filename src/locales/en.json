@@ -258,5 +258,12 @@
     "phoneHint": "If you would like a reply",
     "send": "Send message",
     "thanks": "Message received. Thank you! We'll reply soon."
+  },
+  "time": {
+    "yours": "Your time: {{t}}",
+    "yoursShort": "Solved! Your time {{t}}",
+    "typical": "Most people solve it in {{t}}",
+    "mostShort": "most people {{t}}",
+    "close": "Close"
   }
 }

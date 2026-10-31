@@ -75,3 +75,12 @@ export async function addContactMessage(row: { name: string; phone: string; mess
   const { error } = await supabase.from('contact_messages').insert(row);
   if (error) throw error;
 }
+
+/** Typical (median) solving time; null until at least 10 people have solved it. */
+export async function getTimeStats(puzzleId: string): Promise<{ solvers: number; median_ms: number | null }> {
+  if (!supabase || puzzleId.startsWith('sample-')) return { solvers: 0, median_ms: null };
+  const { data, error } = await supabase.rpc('public_time_stats', { p_puzzle: puzzleId });
+  if (error || !data?.length) return { solvers: 0, median_ms: null };
+  const r = data[0] as { solvers: number; median_ms: number | null };
+  return { solvers: Number(r.solvers), median_ms: r.median_ms == null ? null : Number(r.median_ms) };
+}
