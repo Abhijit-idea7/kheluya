@@ -30,11 +30,11 @@ export default function Header() {
       <div className="max-w-site mx-auto px-3 sm:px-5 py-2 flex items-center gap-3">
         <Link to="/" className="shrink min-w-0" aria-label={t('nav.home')}>
           <img
-            src="/brand/logo-strip.webp"
+            src="/brand/logo-mark.webp"
             alt={t('app.logoAlt')}
-            width={426}
+            width={250}
             height={80}
-            className="h-11 sm:h-14 w-auto max-w-full"
+            className="h-12 sm:h-14 w-auto max-w-full"
           />
         </Link>
 

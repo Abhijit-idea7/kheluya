@@ -32,10 +32,10 @@ export default function HomePage() {
         <div className="relative lg:order-2 grid place-items-center">
           <div className="rays absolute inset-[-12%] pointer-events-none" aria-hidden="true" />
           <img
-            src="/brand/logo-big.webp"
+            src="/brand/logo-hero.webp"
             alt={t('app.logoAlt')}
-            width={454}
-            height={250}
+            width={450}
+            height={194}
             className="relative pop-in w-[72%] sm:w-full max-w-[520px] h-auto drop-shadow-[0_6px_0_rgba(16,35,63,0.12)]"
           />
         </div>
