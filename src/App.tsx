@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from '@/layout/Layout';
 import HomePage from '@/pages/HomePage';
@@ -16,7 +17,6 @@ import PishviPage from '@/pages/PishviPage';
 import CheckoutPage from '@/pages/CheckoutPage';
 import OrderPage from '@/pages/OrderPage';
 import MajhiOrderPage from '@/pages/MajhiOrderPage';
-import AdminPage from '@/pages/AdminPage';
 import {
   DhoranPrivacyPage,
   DhoranTermsPage,
@@ -24,17 +24,22 @@ import {
   DhoranRefundsPage,
 } from '@/pages/DhoranPages';
 import NotFoundPage from '@/pages/NotFoundPage';
+import ShortNumberRedirect from '@/pages/ShortNumberRedirect';
+
+const AdminPage = lazy(() => import('@/pages/AdminPage'));
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/khel/:n" element={<KhelPage />} />
+        <Route path="/admin/*" element={<Suspense fallback={<p className="p-6">Loading…</p>}><AdminPage /></Suspense>} />
+        <Route path="/:n" element={<ShortNumberRedirect />} />
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/kodi" element={<KodiPage />} />
           <Route path="/prakar/:type" element={<PrakarPage />} />
-          <Route path="/k/:slug" element={<KodiEkPage />} />
-          <Route path="/khel/:slug" element={<KhelPage />} />
+          <Route path="/k/:n" element={<KodiEkPage />} />
           <Route path="/madat" element={<MadatPage />} />
           <Route path="/kutumb" element={<KutumbPage />} />
           <Route path="/amchyabaddal" element={<AmchyabaddalPage />} />
@@ -50,7 +55,6 @@ export default function App() {
           <Route path="/dhoran/terms" element={<DhoranTermsPage />} />
           <Route path="/dhoran/shipping" element={<DhoranShippingPage />} />
           <Route path="/dhoran/refunds" element={<DhoranRefundsPage />} />
-          <Route path="/admin" element={<AdminPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

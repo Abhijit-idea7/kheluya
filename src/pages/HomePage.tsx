@@ -1,22 +1,29 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Clock, Share2, Smartphone, Hand, Send } from 'lucide-react';
+import { Clock, Smartphone, Hand, Send, Play } from 'lucide-react';
 import Tile from '@/components/Tile';
 import Illustration from '@/components/Illustration';
-import { sampleWeek, todayIndexIST, type Lang } from '@/data/sampleWeek';
-
-// Week runs Monday → Sunday on screen
-const weekOrder = [1, 2, 3, 4, 5, 6, 0];
+import ShareButtons from '@/components/ShareButtons';
+import { getLivePuzzles } from '@/lib/api';
+import { useAsync } from '@/lib/useAsync';
+import { pick, type Lang } from '@/lib/types';
+import { addDays, dayName, dayTile, istToday, mondayOf } from '@/lib/dates';
+import { newSessionId } from '@/lib/track';
 
 export default function HomePage() {
   const { t, i18n } = useTranslation();
   const lang: Lang = i18n.language === 'en' ? 'en' : 'mr';
-  const todayIdx = todayIndexIST();
-  const today = sampleWeek.find((p) => p.dayIndex === todayIdx) ?? sampleWeek[0];
-  const week = weekOrder.map((d) => sampleWeek.find((p) => p.dayIndex === d)!);
-
-  const shareText = `${t('home.today.shareText', { name: today.name.mr })} https://kheluya.in/${today.number}?s=wa`;
-  const shareHref = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+  const sessionId = useMemo(() => newSessionId(), []);
+  const todayIso = istToday();
+  const { data: recent, loading } = useAsync(() => getLivePuzzles({ limit: 21 }), []);
+  const today = recent?.[0] ?? null;
+  const isTodayFresh = today?.live_date === todayIso;
+  const mon = mondayOf(todayIso);
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const date = addDays(mon, i);
+    return { date, puzzle: (recent ?? []).find((p) => p.live_date === date) ?? null };
+  });
 
   const steps = [
     { Icon: Smartphone, title: t('home.how.s1.title'), body: t('home.how.s1.body') },
@@ -29,7 +36,6 @@ export default function HomePage() {
     <div className="overflow-x-hidden">
       {/* HERO */}
       <section className="max-w-site mx-auto px-4 sm:px-5 pt-4 lg:pt-12 pb-4 grid gap-4 lg:gap-10 lg:grid-cols-[1.05fr_1fr] items-center">
-        {/* Illustration — first on phone, right on desktop */}
         <div className="relative lg:order-2 grid place-items-center">
           <div className="rays absolute inset-[-12%] pointer-events-none" aria-hidden="true" />
           <img
@@ -46,38 +52,48 @@ export default function HomePage() {
           <p className="mt-3 text-[1.35rem] leading-snug text-ink/85 max-w-xl">{t('home.hero.sub')}</p>
 
           {/* Today's puzzle */}
-          <article className="sticker relative overflow-hidden mt-6 p-5 sm:p-6" aria-labelledby="today-name">
-            <div className="grid-corner absolute right-0 top-0 w-40 h-40 pointer-events-none" aria-hidden="true" />
-            <div className="relative flex items-start gap-4">
-              <Tile char={today.tile} size={68} today tilt={-4} />
-              <div className="min-w-0">
-                <p className="font-heading font-bold text-xl text-orange-deep">
-                  {t('home.today.label', { day: today.day[lang] })}
-                </p>
-                <h2 id="today-name" className="text-heading-md leading-tight">{today.name[lang]}</h2>
+          {loading ? (
+            <div className="sticker mt-6 p-6 h-64 animate-pulse" aria-hidden="true" />
+          ) : today ? (
+            <article className="sticker relative overflow-hidden mt-6 p-5 sm:p-6" aria-labelledby="today-name">
+              <div className="grid-corner absolute right-0 top-0 w-40 h-40 pointer-events-none" aria-hidden="true" />
+              <div className="relative flex items-start gap-4">
+                <Tile char={today.type?.tile ?? 'क'} size={68} today tilt={-4} />
+                <div className="min-w-0">
+                  <p className="font-heading font-bold text-xl text-orange-deep">
+                    {isTodayFresh
+                      ? t('home.today.label', { day: dayName(todayIso, lang) })
+                      : t('home.today.latest')}
+                  </p>
+                  <h2 id="today-name" className="text-heading-md leading-tight">{pick(today, 'name', lang)}</h2>
+                </div>
               </div>
-            </div>
-            <p className="relative mt-3 text-[1.3rem] leading-snug">{today.about[lang]}</p>
-            <p className="relative mt-3 flex flex-wrap gap-x-5 gap-y-1 text-lg text-ink/80">
-              <span className="inline-flex items-center gap-2">
-                <Clock size={20} strokeWidth={2.4} aria-hidden="true" />
-                {today.time[lang]}
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-orange border-2 border-ink" aria-hidden="true" />
-                {today.level[lang]}
-              </span>
-            </p>
-            <div className="relative mt-5 grid gap-3 sm:grid-cols-2">
-              <Link to={`/k/${today.number}`} className="btn btn-primary w-full text-[1.6rem]">
+              <p className="relative mt-3 text-[1.3rem] leading-snug">{pick(today, 'about', lang)}</p>
+              <p className="relative mt-3 flex flex-wrap gap-x-5 gap-y-1 text-lg text-ink/80">
+                {pick(today, 'time', lang) && (
+                  <span className="inline-flex items-center gap-2">
+                    <Clock size={20} strokeWidth={2.4} aria-hidden="true" />
+                    {pick(today, 'time', lang)}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-full bg-orange border-2 border-ink" aria-hidden="true" />
+                  {t(`difficulty.${today.difficulty}`)}
+                </span>
+              </p>
+              <Link to={`/khel/${today.number}`} className="relative btn btn-primary w-full mt-5 text-[1.6rem]">
+                <Play size={26} strokeWidth={2.8} fill="currentColor" aria-hidden="true" />
                 {t('home.today.play')}
               </Link>
-              <a href={shareHref} target="_blank" rel="noopener noreferrer" className="btn btn-whatsapp w-full text-xl whitespace-nowrap">
-                <Share2 size={22} strokeWidth={2.6} aria-hidden="true" />
-                {t('home.today.share')}
-              </a>
+              <div className="relative">
+                <ShareButtons puzzle={today} sessionId={sessionId} compact={false} />
+              </div>
+            </article>
+          ) : (
+            <div className="sticker mt-6 p-6">
+              <p className="text-xl">{t('home.today.none')}</p>
             </div>
-          </article>
+          )}
         </div>
       </section>
 
@@ -86,27 +102,36 @@ export default function HomePage() {
         <h2 id="week-h" className="text-heading-md">{t('home.week.title')}</h2>
         <p className="mt-1 text-ink/80">{t('home.week.sub')}</p>
         <ul className="mt-6 grid grid-cols-1 sm:grid-cols-4 lg:grid-cols-7 gap-3 lg:gap-4">
-          {week.map((p) => {
-            const isToday = p.dayIndex === todayIdx;
-            return (
-              <li key={p.number}>
-                <Link
-                  to={`/k/${p.number}`}
-                  className={`h-full flex flex-row sm:flex-col items-center sm:text-center gap-4 sm:gap-2 rounded-3xl border-[3px] border-ink px-4 sm:px-2 py-3 sm:pt-4 transition-transform active:translate-y-1 ${
-                    isToday ? 'bg-orange-soft shadow-sticker' : 'bg-paper shadow-[0_4px_0_0_#10233F]'
-                  }`}
-                  aria-label={`${p.day[lang]}: ${p.name[lang]}`}
-                >
-                  <Tile char={p.tile} size={52} today={isToday} className="shrink-0" />
-                  <span className="flex flex-col sm:items-center gap-0.5 min-w-0">
-                    <span className="font-heading font-bold text-xl sm:text-lg leading-tight">{p.day[lang]}</span>
-                    <span className="text-[1.2rem] sm:text-[1.1rem] leading-tight">{p.name[lang]}</span>
-                    <span className="text-base text-ink/70">{p.time[lang]}</span>
+          {week.map(({ date, puzzle: p }) => {
+            const isToday = date === todayIso;
+            const future = date > todayIso;
+            const inner = (
+              <>
+                <Tile char={p?.type?.tile ?? dayTile(date)} size={52} today={isToday} className={`shrink-0 ${future ? 'opacity-50' : ''}`} />
+                <span className="flex flex-col sm:items-center gap-0.5 min-w-0">
+                  <span className="font-heading font-bold text-xl sm:text-lg leading-tight">{dayName(date, lang)}</span>
+                  <span className="text-[1.2rem] sm:text-[1.1rem] leading-tight">
+                    {p ? pick(p, 'name', lang) : future ? t('home.week.soon') : t('home.week.rest')}
                   </span>
-                  {isToday && (
-                    <span className="ml-auto sm:ml-0 sm:mt-1 rounded-full bg-ink text-white text-base sm:text-sm font-bold px-3 py-0.5">{t('home.week.today')}</span>
-                  )}
-                </Link>
+                  {p && pick(p, 'time', lang) && <span className="text-base text-ink/70">{pick(p, 'time', lang)}</span>}
+                </span>
+                {isToday && (
+                  <span className="ml-auto sm:ml-0 sm:mt-1 rounded-full bg-ink text-white text-base sm:text-sm font-bold px-3 py-0.5">{t('home.week.today')}</span>
+                )}
+              </>
+            );
+            const cls = `h-full flex flex-row sm:flex-col items-center sm:text-center gap-4 sm:gap-2 rounded-3xl border-[3px] border-ink px-4 sm:px-2 py-3 sm:pt-4 ${
+              isToday ? 'bg-orange-soft shadow-sticker' : future || !p ? 'bg-cream border-dashed' : 'bg-paper shadow-[0_4px_0_0_#10233F]'
+            }`;
+            return (
+              <li key={date}>
+                {p ? (
+                  <Link to={`/k/${p.number}`} className={`${cls} transition-transform active:translate-y-1`} aria-label={`${dayName(date, lang)}: ${pick(p, 'name', lang)}`}>
+                    {inner}
+                  </Link>
+                ) : (
+                  <div className={cls}>{inner}</div>
+                )}
               </li>
             );
           })}

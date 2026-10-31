@@ -4,7 +4,7 @@ import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import Footer from '@/components/Footer';
 
-export default function Layout() {
+export default function Layout({ notFound }: { notFound?: React.ReactNode } = {}) {
   const { pathname } = useLocation();
 
   useEffect(() => {
@@ -15,7 +15,7 @@ export default function Layout() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 w-full">
-        <Outlet />
+        {notFound ?? <Outlet />}
       </main>
       <Footer />
       <BottomNav />

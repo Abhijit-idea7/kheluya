@@ -29,7 +29,9 @@
     "explore": "Play",
     "aboutUs": "About",
     "policies": "Policies",
-    "tagline": "One Marathi puzzle a day. Big letters, no sign-up, just play."
+    "tagline": "One Marathi puzzle a day. Big letters, no sign-up, just play.",
+    "follow": "Follow us",
+    "channel": "WhatsApp Channel"
   },
   "home": {
     "hero": {
@@ -40,13 +42,17 @@
       "label": "Today's puzzle · {{day}}",
       "play": "Play today's puzzle",
       "share": "Send on WhatsApp",
-      "shareText": "Today's puzzle: {{name}}. Chala Kheluya!"
+      "shareText": "Today's puzzle: {{name}}. Chala Kheluya!",
+      "latest": "Latest puzzle",
+      "none": "The first puzzle is coming soon."
     },
     "week": {
       "title": "This week's puzzles",
       "sub": "A new puzzle every morning. Catch up on any you missed.",
       "today": "Today",
-      "all": "See all puzzles"
+      "all": "See all puzzles",
+      "soon": "Coming soon",
+      "rest": "No puzzle"
     },
     "how": {
       "title": "How does it work?",
@@ -83,7 +89,7 @@
   "pages": {
     "kodi": {
       "heading": "All Puzzles",
-      "description": "A list of all puzzles — one new puzzle every day and all older puzzles here."
+      "description": "A new puzzle every day. Play any earlier puzzle here, any time."
     },
     "prakar": {
       "heading": "Puzzle Type",
@@ -181,5 +187,76 @@
     "confused": "Aajoba puzzled by a crossword while Aaji laughs",
     "diwali": "Aaji and Aajoba solving a puzzle by Diwali lamps and rangoli",
     "faces": "Aaji and Aajoba"
+  },
+  "play": {
+    "back": "Back",
+    "loading": "Opening the puzzle…",
+    "missing": "Puzzle not found",
+    "noFile": "This puzzle will be playable here soon",
+    "error": "The puzzle could not open. Please try again in a little while.",
+    "allPuzzles": "All puzzles"
+  },
+  "puzzle": {
+    "number": "Puzzle {{n}}",
+    "play": "Play",
+    "todays": "Today's puzzle",
+    "howToPlay": "How to play",
+    "moreLikeThis": "More puzzles like this",
+    "solvedBy": "Solved by {{n}} people"
+  },
+  "difficulty": {
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard"
+  },
+  "share": {
+    "whatsapp": "Send on WhatsApp",
+    "elsewhere": "Share elsewhere",
+    "copy": "Copy link",
+    "copied": "Link copied",
+    "phone": "Share from phone",
+    "asPicture": "as a picture",
+    "making": "Making the picture…",
+    "downloaded": "Picture downloaded. Now post it on Instagram.",
+    "message": "Today's puzzle: {{name}}. Chala Kheluya!",
+    "cardKicker": "Today's puzzle",
+    "cardInvite": "Can you solve it too?"
+  },
+  "kodi": {
+    "search": "Search puzzles",
+    "searchHint": "Search: sudoku, shabdakode…",
+    "types": "Puzzle types",
+    "all": "All",
+    "aboutType": "About this type",
+    "none": "No puzzles here yet.",
+    "typeMissing": "This puzzle type was not found",
+    "allOfType": "All puzzles of this type"
+  },
+  "suchana": {
+    "phone": "WhatsApp number",
+    "phoneHint": "10-digit number",
+    "name": "Name",
+    "nameHint": "English letters are fine",
+    "city": "Town / city",
+    "cityHint": "e.g. Pune, Nashik",
+    "interest": "What should we tell you about?",
+    "i_both": "Puzzles and the book",
+    "i_puzzles": "Puzzles only",
+    "i_book": "The book only",
+    "consent": "I agree that Chala Kheluya may send me puzzles and book news on WhatsApp. I can stop this any time.",
+    "badPhone": "Please enter a 10-digit WhatsApp number.",
+    "needConsent": "Please tick the box above to continue.",
+    "error": "Could not save right now. Please try again in a little while.",
+    "saving": "Saving…",
+    "submit": "Leave my number",
+    "thanks": "Thank you!",
+    "thanksBody": "We'll tell you on WhatsApp when a new puzzle arrives."
+  },
+  "sampark": {
+    "message": "Your message",
+    "phone": "Phone number",
+    "phoneHint": "If you would like a reply",
+    "send": "Send message",
+    "thanks": "Message received. Thank you! We'll reply soon."
   }
 }

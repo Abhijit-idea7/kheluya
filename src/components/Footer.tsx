@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Facebook, Instagram, MessageCircle } from 'lucide-react';
+import { getPublicSettings } from '@/lib/api';
+import { useAsync } from '@/lib/useAsync';
 
 const explore = [
   { to: '/kodi', key: 'nav.kodi' },
@@ -50,6 +53,7 @@ export default function Footer() {
             <img src="/brand/logo-mark.webp" alt={t('app.logoAlt')} width={250} height={80} className="h-14 w-auto" />
           </div>
           <p className="mt-4 text-lg text-white/85 max-w-xs">{t('footer.tagline')}</p>
+          <SocialLinks />
         </div>
         <Column title={t('footer.explore')} links={explore} />
         <Column title={t('footer.aboutUs')} links={about} />
@@ -59,5 +63,35 @@ export default function Footer() {
         <p className="max-w-site mx-auto px-5 py-4 text-base text-white/70">{t('footer.siteLine')}</p>
       </div>
     </footer>
+  );
+}
+
+function SocialLinks() {
+  const { t } = useTranslation();
+  const { data } = useAsync(() => getPublicSettings(), []);
+  if (!data) return null;
+  const str = (k: string) => (typeof data[k] === 'string' && /^https:\/\//.test(data[k] as string) ? (data[k] as string) : '');
+  const links = [
+    data.social_links === true && str('link_facebook') ? { href: str('link_facebook'), label: 'Facebook', Icon: Facebook } : null,
+    data.social_links === true && str('link_instagram') ? { href: str('link_instagram'), label: 'Instagram', Icon: Instagram } : null,
+    data.whatsapp_channel_link === true && str('link_whatsapp_channel')
+      ? { href: str('link_whatsapp_channel'), label: t('footer.channel'), Icon: MessageCircle }
+      : null,
+  ].filter(Boolean) as { href: string; label: string; Icon: typeof Facebook }[];
+  if (!links.length) return null;
+  return (
+    <div className="mt-5">
+      <p className="text-lg font-heading font-bold">{t('footer.follow')}</p>
+      <ul className="mt-2 flex flex-wrap gap-2">
+        {links.map(({ href, label, Icon }) => (
+          <li key={href}>
+            <a href={href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 min-h-[3rem] px-4 rounded-2xl bg-paper text-ink border-[3px] border-ink font-bold">
+              <Icon size={22} strokeWidth={2.4} aria-hidden="true" />
+              {label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
