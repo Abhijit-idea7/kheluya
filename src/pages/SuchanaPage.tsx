@@ -7,6 +7,7 @@ export default function SuchanaPage() {
     <PageShell
       title={t('pages.suchana.heading')}
       description={t('pages.suchana.description')}
+      illustration={{ name: 'cheer', alt: t('img.cheer') }}
     />
   );
 }

@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Clock, Share2, BookOpen, MessageCircle, Smartphone, Hand, Send } from 'lucide-react';
+import { Clock, Share2, Smartphone, Hand, Send } from 'lucide-react';
 import Tile from '@/components/Tile';
+import Illustration from '@/components/Illustration';
 import { sampleWeek, todayIndexIST, type Lang } from '@/data/sampleWeek';
 
 // Week runs Monday → Sunday on screen
@@ -138,32 +139,39 @@ export default function HomePage() {
 
       {/* FAMILIES + SHOP */}
       <section className="max-w-site mx-auto px-4 sm:px-5 mt-14 lg:mt-20 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-3xl border-[3px] border-ink bg-green-soft p-6 sm:p-8 shadow-sticker-lg">
-          <MessageCircle size={36} strokeWidth={2.4} className="text-green" aria-hidden="true" />
-          <h2 className="mt-3 text-heading-md">{t('home.family.title')}</h2>
-          <p className="mt-2 text-lg leading-snug text-ink/85">{t('home.family.body')}</p>
-          <Link to="/kutumb" className="btn btn-quiet mt-5 text-xl">{t('home.family.cta')}</Link>
+        <div className="rounded-3xl border-[3px] border-ink bg-green-soft p-6 sm:p-8 shadow-sticker-lg flex flex-col sm:flex-row-reverse gap-5 sm:items-center">
+          <Illustration name="share" alt={t('img.share')} className="w-40 sm:w-44 shrink-0" />
+          <div>
+            <h2 className="text-heading-md">{t('home.family.title')}</h2>
+            <p className="mt-2 text-lg leading-snug text-ink/85">{t('home.family.body')}</p>
+            <Link to="/kutumb" className="btn btn-quiet mt-5 text-xl">{t('home.family.cta')}</Link>
+          </div>
         </div>
 
         <div className="relative overflow-hidden rounded-3xl border-[3px] border-ink bg-orange-soft p-6 sm:p-8 shadow-sticker-lg">
           <span className="absolute right-[-44px] top-6 rotate-45 bg-ink text-white font-heading font-bold text-lg px-14 py-1">
             {t('home.shop.soon')}
           </span>
-          <BookOpen size={36} strokeWidth={2.4} className="text-orange-deep" aria-hidden="true" />
-          <h2 className="mt-3 text-heading-md pr-16">{t('home.shop.title')}</h2>
-          <p className="mt-2 text-lg leading-snug text-ink/85">{t('home.shop.body')}</p>
-          <Link to="/suchana" className="btn btn-primary mt-5 text-xl">{t('home.shop.cta')}</Link>
+          <div className="flex flex-col sm:flex-row gap-5 sm:items-center">
+            <Illustration name="book" alt={t('img.book')} className="w-36 sm:w-40 shrink-0" />
+            <div>
+              <h2 className="text-heading-md pr-12 sm:pr-14">{t('home.shop.title')}</h2>
+              <p className="mt-2 text-lg leading-snug text-ink/85">{t('home.shop.body')}</p>
+              <Link to="/suchana" className="btn btn-primary mt-5 text-xl">{t('home.shop.cta')}</Link>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* NOTIFY */}
       <section className="max-w-site mx-auto px-4 sm:px-5 mt-14 lg:mt-20">
-        <div className="relative overflow-hidden rounded-3xl bg-navy text-white border-[3px] border-ink p-6 sm:p-10 grid gap-6 md:grid-cols-[1fr_auto] items-center">
+        <div className="relative overflow-hidden rounded-3xl bg-navy text-white border-[3px] border-ink p-6 sm:p-10 grid gap-6 md:grid-cols-[auto_1fr_auto] items-center">
+          <Illustration name="cheer" alt={t('img.cheer')} className="w-32 md:w-40" />
           <div>
             <h2 className="text-heading-md text-white">{t('home.notify.title')}</h2>
             <p className="mt-2 text-lg leading-snug text-white/85 max-w-xl">{t('home.notify.body')}</p>
           </div>
-          <Link to="/suchana" className="relative btn btn-primary text-xl">{t('home.notify.cta')}</Link>
+          <Link to="/suchana" className="btn btn-primary text-xl">{t('home.notify.cta')}</Link>
         </div>
       </section>
     </div>

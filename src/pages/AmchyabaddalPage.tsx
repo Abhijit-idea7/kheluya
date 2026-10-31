@@ -7,6 +7,7 @@ export default function AmchyabaddalPage() {
     <PageShell
       title={t('pages.amchyabaddal.heading')}
       description={t('pages.amchyabaddal.description')}
+      illustration={{ name: 'morning', alt: t('img.morning') }}
     />
   );
 }

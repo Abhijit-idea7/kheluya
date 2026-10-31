@@ -103,7 +103,7 @@
     },
     "kutumb": {
       "heading": "For Families",
-      "description": "Ideas and tips for playing together with grandparents and grandchildren."
+      "description": "How to send your parents a puzzle every day, set up WhatsApp for them and gift them the puzzle book."
     },
     "amchyabaddal": {
       "heading": "About Us",
@@ -115,7 +115,7 @@
     },
     "suchana": {
       "heading": "Suggest New Puzzles",
-      "description": "Send puzzles you have made — if we like them, we will publish them on the site."
+      "description": "Leave your number to get a new puzzle on WhatsApp every day."
     },
     "dukan": {
       "heading": "Shop",
@@ -172,5 +172,14 @@
   },
   "lang": {
     "label": "Language"
+  },
+  "img": {
+    "cheer": "Aaji and Aajoba celebrating a solved puzzle",
+    "share": "Aajoba sharing a puzzle on his phone with Aaji",
+    "morning": "Aaji and Aajoba solving a puzzle over morning chai",
+    "book": "Aaji solving a puzzle book",
+    "confused": "Aajoba puzzled by a crossword while Aaji laughs",
+    "diwali": "Aaji and Aajoba solving a puzzle by Diwali lamps and rangoli",
+    "faces": "Aaji and Aajoba"
   }
 }

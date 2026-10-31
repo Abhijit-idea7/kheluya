@@ -7,6 +7,7 @@ export default function KutumbPage() {
     <PageShell
       title={t('pages.kutumb.heading')}
       description={t('pages.kutumb.description')}
+      illustration={{ name: 'share', alt: t('img.share') }}
     />
   );
 }
