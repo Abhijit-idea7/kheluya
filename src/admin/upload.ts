@@ -1,4 +1,4 @@
-import JSZip from 'jszip';
+import { unzip } from '@/admin/unzip';
 import { supabase, BUCKET } from '@/lib/supabase';
 
 export type PreparedFile = { path: string; blob: Blob; type: string };
@@ -21,11 +21,11 @@ export async function prepareUpload(file: File): Promise<Prepared> {
   }
   if (!lower.endsWith('.zip')) throw new Error('Please choose a .html or .zip file.');
 
-  const zip = await JSZip.loadAsync(file);
-  let names = Object.values(zip.files)
-    .filter((f) => !f.dir)
-    .map((f) => f.name)
-    .filter((n) => !n.startsWith('__MACOSX/') && !/(^|\/)(\.DS_Store|Thumbs\.db)$/.test(n));
+  const all = (await unzip(file)).filter(
+    (e) => !e.name.startsWith('__MACOSX/') && !/(^|\/)(\.DS_Store|Thumbs\.db)$/.test(e.name),
+  );
+  const byName = new Map(all.map((e) => [e.name, e.data]));
+  let names = all.map((e) => e.name);
   if (!names.length) throw new Error('The zip is empty.');
 
   // If everything sits inside one top folder, drop that folder from the paths.
@@ -36,7 +36,7 @@ export async function prepareUpload(file: File): Promise<Prepared> {
   for (const n of names) {
     const path = n.slice(strip.length);
     if (path.includes('..')) continue;
-    const blob = await zip.files[n].async('blob');
+    const blob = byName.get(n)!;
     total += blob.size;
     files.push({ path, blob: new Blob([blob], { type: typeOf(path) }), type: typeOf(path) });
   }
