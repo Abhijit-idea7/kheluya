@@ -11,7 +11,7 @@ import { myTime } from '@/lib/myTimes';
 import { useAsync } from '@/lib/useAsync';
 import { pick, type Lang } from '@/lib/types';
 import { dayName, formatDuration, istToday, mrDigits, prettyDate } from '@/lib/dates';
-import { newSessionId, readRef, track } from '@/lib/track';
+import { newSessionId, readRef, trackArrival } from '@/lib/track';
 
 export default function KodiEkPage() {
   const { n } = useParams();
@@ -32,7 +32,7 @@ export default function KodiEkPage() {
   // A visitor who came from a shared link
   useEffect(() => {
     const ref = readRef(search);
-    if (puzzle && ref) track({ puzzle_id: puzzle.id, session_id: sessionId, event: 'arrived', ref });
+    if (puzzle) trackArrival(puzzle.id, sessionId, ref);
   }, [puzzle, search, sessionId]);
 
   const numTxt = (v: number | string) => (lang === 'mr' ? mrDigits(v) : String(v));
@@ -111,7 +111,7 @@ export default function KodiEkPage() {
             )}
           </ul>
 
-          <Link to={`/khel/${puzzle.number}${search}`} className="relative btn btn-primary w-full mt-6 text-[1.75rem] min-h-[4.25rem]">
+          <Link to={`/khel/${puzzle.number}`} className="relative btn btn-primary w-full mt-6 text-[1.75rem] min-h-[4.25rem]">
             <Play size={28} strokeWidth={2.8} fill="currentColor" aria-hidden="true" />
             {t('puzzle.play')}
           </Link>

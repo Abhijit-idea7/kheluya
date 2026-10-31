@@ -88,3 +88,20 @@ export function track(row: EventRow): void {
     // never let counting break a puzzle
   }
 }
+
+/**
+ * Record that this phone arrived at a puzzle through a shared link, at most once
+ * per puzzle, per share channel, per India day — however often the page reloads.
+ */
+export function trackArrival(puzzleId: string, sessionId: string, ref: string | null): void {
+  if (!ref) return;
+  const day = new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10);
+  const key = `ck-arr:${puzzleId}:${ref}:${day}`;
+  try {
+    if (localStorage.getItem(key)) return;
+    localStorage.setItem(key, '1');
+  } catch {
+    /* storage blocked: count once per page load */
+  }
+  track({ puzzle_id: puzzleId, session_id: sessionId, event: 'arrived', ref });
+}

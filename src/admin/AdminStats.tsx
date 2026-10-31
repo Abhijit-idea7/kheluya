@@ -114,7 +114,7 @@ export default function AdminStats() {
             ['Completion', pct(sum(totalsOf, 'completed'), sum(totalsOf, 'started'))],
             ['Play time', `${playMin(sum(totalsOf, 'total_play_ms'))} min`],
             ['Shares', n(sum(totalsOf, 'shares'))],
-            ['Arrived via shares', n(sum(totalsOf, 'arrivals'))],
+            ['Came via shares (people)', n(sum(totalsOf, 'arrivals'))],
           ].map(([k, v]) => (
             <Card key={k} className="!p-3">
               <div className="text-sm text-ink/70">{k}</div>
@@ -133,7 +133,7 @@ export default function AdminStats() {
             <button onClick={() => setTypeFilter('')} aria-label="Show all types" className="font-extrabold">✕</button>
           </span>
         )}
-        <span className="ml-auto text-sm text-ink/60">Admin previews are not counted. Times are India time.</span>
+        <span className="ml-auto text-sm text-ink/60">"Came via shares" = people who opened the puzzle from a shared link. Admin previews are not counted. Times are India time.</span>
       </div>
 
       {!rows ? (
@@ -142,7 +142,7 @@ export default function AdminStats() {
         <table className="mt-3 w-full text-left rounded-2xl border-2 border-ink bg-paper border-separate border-spacing-0 overflow-hidden">
           <thead className="bg-cream">
             <tr>
-              {['Puzzle type', 'Puzzles', 'Opens', 'Players', 'Started', 'Completed', 'Done %', 'Play time', 'Shares', 'Arrived'].map((h) => (
+              {['Puzzle type', 'Puzzles', 'Opens', 'Players', 'Started', 'Completed', 'Done %', 'Play time', 'Shares', 'Came via shares'].map((h) => (
                 <th key={h} className={th}>{h}</th>
               ))}
             </tr>
@@ -173,7 +173,7 @@ export default function AdminStats() {
         <table className="mt-3 w-full text-left rounded-2xl border-2 border-ink bg-paper border-separate border-spacing-0 overflow-hidden">
           <thead className="bg-cream">
             <tr>
-              {['No.', 'Puzzle', 'Released', 'Opens', 'Players', 'Started', 'Completed', 'Median time', 'Play time', 'Shares', 'Arrived'].map((h) => (
+              {['No.', 'Puzzle', 'Released', 'Opens', 'Players', 'Started', 'Completed', 'Median time', 'Play time', 'Shares', 'Came via shares'].map((h) => (
                 <th key={h} className={th}>{h}</th>
               ))}
             </tr>
@@ -273,7 +273,7 @@ function DayByDay({ puzzleId, from, to, name }: { puzzleId: string; from: string
             median_ms: median([...doneTimes.values()]),
             play_ms: of('left').reduce((s, e) => s + (e.value_ms ?? 0), 0),
             shares: sh.length, wa: c('whatsapp'), fb: c('facebook'), ig: c('instagram'), copy: c('copy'), phone: c('native'),
-            arrivals: of('arrived').length,
+            arrivals: new Set(of('arrived').map((e) => e.player_id)).size,
           };
         });
       if (alive) setDays(out);
@@ -307,7 +307,7 @@ function DayByDay({ puzzleId, from, to, name }: { puzzleId: string; from: string
       <table className="w-full text-left bg-white rounded-xl border border-line border-separate border-spacing-0 overflow-hidden">
         <thead>
           <tr>
-            {['Date', 'Opens', 'Players', 'Started', 'Completed', 'Median time', 'Play time', 'Shares', 'Arrived'].map((h) => (
+            {['Date', 'Opens', 'Players', 'Started', 'Completed', 'Median time', 'Play time', 'Shares', 'Came via shares'].map((h) => (
               <th key={h} className="p-2 text-sm font-bold whitespace-nowrap">{h}</th>
             ))}
           </tr>

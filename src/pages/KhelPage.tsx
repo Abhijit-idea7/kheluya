@@ -7,7 +7,7 @@ import { saveMyTime } from '@/lib/myTimes';
 import { formatDuration } from '@/lib/dates';
 import { publicFileUrl } from '@/lib/supabase';
 import { preparePuzzleHtml } from '@/lib/bridge';
-import { newSessionId, readRef, track, type Channel } from '@/lib/track';
+import { newSessionId, readRef, track, trackArrival, type Channel } from '@/lib/track';
 import { shortLink } from '@/lib/share';
 import { pick, type Lang, type Puzzle } from '@/lib/types';
 import Illustration from '@/components/Illustration';
@@ -60,7 +60,7 @@ export default function KhelPage() {
     const pid = puzzle.id;
     const ref = readRef(search);
     track({ puzzle_id: pid, session_id: sessionId, event: 'opened', ref });
-    if (ref) track({ puzzle_id: pid, session_id: sessionId, event: 'arrived', ref });
+    trackArrival(pid, sessionId, ref);
 
     let startedSent = false;
     let completedSent = false;
