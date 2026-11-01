@@ -14,10 +14,10 @@ export default function PageShell({ title, description, showBack = true, illustr
   const { t } = useTranslation();
 
   return (
-    <div className="max-w-content mx-auto px-4 sm:px-5 py-6 sm:py-10">
+    <div className="max-w-content mx-auto px-4 sm:px-5 py-4 sm:py-8">
       {showBack && (
-        <button onClick={() => window.history.back()} className="btn btn-quiet mb-6 text-xl">
-          <ArrowLeft size={24} strokeWidth={2.6} aria-hidden="true" />
+        <button onClick={() => window.history.back()} className="inline-flex items-center gap-2 min-h-[2.75rem] -ml-1 mb-2 font-heading font-bold text-lg text-ink/75 hover:text-ink">
+          <ArrowLeft size={20} strokeWidth={2.6} aria-hidden="true" />
           <span>{t('back')}</span>
         </button>
       )}
@@ -26,7 +26,7 @@ export default function PageShell({ title, description, showBack = true, illustr
           name={illustration.name}
           alt={illustration.alt}
           eager
-          className={`mb-6 shadow-sticker-lg ${
+          className={`mb-4 shadow-sticker-lg ${
             illustration.name === 'morning' || illustration.name === 'diwali' ? 'w-full' : 'w-64 sm:w-72'
           }`}
         />

@@ -52,7 +52,8 @@
       "today": "Today",
       "all": "See all puzzles",
       "soon": "Coming soon",
-      "rest": "No puzzle"
+      "rest": "No puzzle",
+      "played": "Played"
     },
     "how": {
       "title": "How does it work?",
@@ -238,7 +239,11 @@
     "aboutType": "About this type",
     "none": "No puzzles here yet.",
     "typeMissing": "This puzzle type was not found",
-    "allOfType": "All puzzles of this type"
+    "allOfType": "All puzzles of this type",
+    "tabAll": "All",
+    "tabDaily": "Daily puzzles",
+    "tabQuick": "Quick puzzles",
+    "anyType": "All types"
   },
   "suchana": {
     "phone": "WhatsApp number",

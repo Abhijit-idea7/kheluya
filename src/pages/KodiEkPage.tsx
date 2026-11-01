@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Clock, Calendar, Gauge, Play, Timer, Trophy } from 'lucide-react';
 import Tile from '@/components/Tile';
 import PuzzleCard from '@/components/PuzzleCard';
-import ShareButtons from '@/components/ShareButtons';
+import { ShareToggle } from '@/components/ShareButtons';
 import Illustration from '@/components/Illustration';
 import { NextCard } from '@/components/SuggestCards';
 import { suggest } from '@/lib/suggest';
@@ -64,83 +64,87 @@ export default function KodiEkPage() {
   const others = (more ?? []).filter((p) => p.id !== puzzle.id).slice(0, 3);
 
   return (
-    <div className="max-w-site mx-auto px-4 sm:px-5 py-6 sm:py-10">
-      <Link to="/kodi" className="btn btn-quiet text-xl mb-6">
-        <ArrowLeft size={24} strokeWidth={2.6} aria-hidden="true" />
+    <div className="max-w-site mx-auto px-4 sm:px-5 py-3 sm:py-8">
+      <Link to="/kodi" className="inline-flex items-center gap-2 min-h-[2.75rem] -ml-1 mb-2 font-heading font-bold text-lg text-ink/75 hover:text-ink">
+        <ArrowLeft size={20} strokeWidth={2.6} aria-hidden="true" />
         {t('play.allPuzzles')}
       </Link>
 
       {alt && (
-        <div className="mb-8 max-w-xl">
+        <div className="mb-4 max-w-xl">
           <NextCard suggestion={alt} kicker={t('next.leftKicker')} from="lv" tone="green" />
         </div>
       )}
 
-      <div className="grid gap-8 lg:grid-cols-[1.2fr_1fr] items-start">
-        <article className="sticker relative overflow-hidden p-5 sm:p-7">
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr] items-start">
+        <article className="sticker relative overflow-hidden p-4 sm:p-6">
           <div className="grid-corner absolute right-0 top-0 w-40 h-40 pointer-events-none" aria-hidden="true" />
-          <div className="relative flex items-start gap-4">
-            <Tile char={puzzle.type?.tile ?? 'क'} size={76} today={isToday} tilt={-4} className="shrink-0" />
+          <div className="relative flex items-center gap-3">
+            <Tile char={puzzle.type?.tile ?? 'क'} size={60} today={isToday} tilt={-4} className="shrink-0" />
             <div className="min-w-0">
-              <p className="font-heading font-bold text-xl text-orange-deep">
+              <p className="font-heading font-bold text-lg text-orange-deep leading-tight">
                 {puzzle.type ? pick(puzzle.type, 'name', lang) : ''} · {t('puzzle.number', { n: numTxt(puzzle.number) })}
               </p>
               <h1 className="text-heading-lg leading-tight">{pick(puzzle, 'name', lang)}</h1>
             </div>
           </div>
-          {pick(puzzle, 'about', lang) && <p className="relative mt-4 text-[1.35rem] leading-snug">{pick(puzzle, 'about', lang)}</p>}
+          {pick(puzzle, 'about', lang) && <p className="relative mt-3 text-xl leading-snug">{pick(puzzle, 'about', lang)}</p>}
 
-          <ul className="relative mt-4 grid gap-2 text-lg">
+          <p className="relative mt-3 flex flex-wrap gap-x-4 gap-y-1 text-lg text-ink/80">
             {puzzle.live_date && (
-              <li className="flex items-center gap-3">
-                <Calendar size={22} strokeWidth={2.4} aria-hidden="true" />
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar size={18} strokeWidth={2.4} aria-hidden="true" />
                 {isToday ? t('puzzle.todays') : `${dayName(puzzle.live_date, lang)}, ${prettyDate(puzzle.live_date, lang)}`}
-              </li>
+              </span>
             )}
             {pick(puzzle, 'time', lang) && (
-              <li className="flex items-center gap-3">
-                <Clock size={22} strokeWidth={2.4} aria-hidden="true" />
+              <span className="inline-flex items-center gap-1.5">
+                <Clock size={18} strokeWidth={2.4} aria-hidden="true" />
                 {pick(puzzle, 'time', lang)}
-              </li>
+              </span>
             )}
-            <li className="flex items-center gap-3">
-              <Gauge size={22} strokeWidth={2.4} aria-hidden="true" />
+            <span className="inline-flex items-center gap-1.5">
+              <Gauge size={18} strokeWidth={2.4} aria-hidden="true" />
               {t(`difficulty.${puzzle.difficulty}`)}
-            </li>
-            {times?.median_ms != null && (
-              <li className="flex items-center gap-3">
-                <Timer size={22} strokeWidth={2.4} aria-hidden="true" />
-                {t('time.typical', { t: formatDuration(times.median_ms, lang) })}
-              </li>
-            )}
-            {mine != null && (
-              <li className="flex items-center gap-3 font-bold text-green">
-                <Trophy size={22} strokeWidth={2.4} aria-hidden="true" />
-                {t('time.yours', { t: formatDuration(mine, lang) })}
-              </li>
-            )}
-            {plays != null && plays > 0 && (
-              <li className="font-bold text-green">{t('puzzle.solvedBy', { n: numTxt(plays.toLocaleString('en-IN')) })}</li>
-            )}
-          </ul>
+            </span>
+          </p>
+          {(times?.median_ms != null || mine != null || (plays != null && plays > 0)) && (
+            <p className="relative mt-1 flex flex-wrap gap-x-4 gap-y-1 text-lg">
+              {times?.median_ms != null && (
+                <span className="inline-flex items-center gap-1.5 text-ink/80">
+                  <Timer size={18} strokeWidth={2.4} aria-hidden="true" />
+                  {t('time.typical', { t: formatDuration(times.median_ms, lang) })}
+                </span>
+              )}
+              {mine != null && (
+                <span className="inline-flex items-center gap-1.5 font-bold text-green">
+                  <Trophy size={18} strokeWidth={2.4} aria-hidden="true" />
+                  {t('time.yours', { t: formatDuration(mine, lang) })}
+                </span>
+              )}
+              {plays != null && plays > 0 && (
+                <span className="font-bold text-green">{t('puzzle.solvedBy', { n: numTxt(plays.toLocaleString('en-IN')) })}</span>
+              )}
+            </p>
+          )}
 
-          <Link to={`/khel/${puzzle.number}`} className="relative btn btn-primary w-full mt-6 text-[1.75rem] min-h-[4.25rem]">
-            <Play size={28} strokeWidth={2.8} fill="currentColor" aria-hidden="true" />
+          <Link to={`/khel/${puzzle.number}`} className="relative btn btn-primary w-full mt-4 !text-[1.5rem] !min-h-[3.25rem]">
+            <Play size={24} strokeWidth={2.8} fill="currentColor" aria-hidden="true" />
             {t('puzzle.play')}
           </Link>
           <div className="relative">
-            <ShareButtons puzzle={puzzle} sessionId={sessionId} />
+            <ShareToggle puzzle={puzzle} sessionId={sessionId} />
           </div>
         </article>
 
-        <aside className="grid gap-6">
+        <aside className="grid gap-5">
           {!how && others.length === 0 && (
             <Illustration name="share" alt={t('img.share')} className="w-full max-w-sm mx-auto shadow-sticker-lg" />
           )}
           {how && (
-            <section className="rounded-3xl border-[3px] border-ink bg-paper p-5 sm:p-6">
+            <section className="rounded-3xl border-[3px] border-ink bg-paper p-4 sm:p-5">
               <h2 className="text-heading-sm">{t('puzzle.howToPlay')}</h2>
-              <p className="mt-2 text-lg leading-relaxed whitespace-pre-line">{how}</p>
+              <p className="mt-1 text-lg leading-snug whitespace-pre-line">{how}</p>
             </section>
           )}
           {others.length > 0 && (

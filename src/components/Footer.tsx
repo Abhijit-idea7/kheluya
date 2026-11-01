@@ -24,21 +24,18 @@ const policies = [
   { to: '/dhoran/refunds', key: 'footer.refunds' },
 ] as const;
 
-function Column({ title, links }: { title: string; links: readonly { to: string; key: string }[] }) {
+function LinkRow({ links, small }: { links: readonly { to: string; key: string }[]; small?: boolean }) {
   const { t } = useTranslation();
   return (
-    <div>
-      <h2 className="text-xl text-white mb-2">{title}</h2>
-      <ul>
-        {links.map(({ to, key }) => (
-          <li key={to}>
-            <Link to={to} className="min-h-[2.75rem] flex items-center text-lg text-white/85 hover:text-white underline-offset-4 hover:underline">
-              {t(key)}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <ul className={`flex flex-wrap gap-x-5 ${small ? 'text-base text-white/65' : 'text-lg text-white/90'}`}>
+      {links.map(({ to, key }) => (
+        <li key={to}>
+          <Link to={to} className="min-h-[2.5rem] flex items-center hover:text-white underline-offset-4 hover:underline">
+            {t(key)}
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -46,21 +43,22 @@ export default function Footer() {
   const { t } = useTranslation();
 
   return (
-    <footer className="bg-navy text-white border-t-[3px] border-ink mt-16 pb-24 lg:pb-0">
-      <div className="max-w-site mx-auto px-5 py-10 grid gap-8 md:grid-cols-[1.3fr_1fr_1fr_1fr]">
-        <div>
-          <div className="inline-block bg-paper rounded-2xl p-2 border-[3px] border-ink">
-            <img src="/brand/logo-mark.webp" alt={t('app.logoAlt')} width={250} height={80} className="h-14 w-auto" />
+    <footer className="bg-navy text-white border-t-[3px] border-ink mt-10 pb-20 lg:pb-0">
+      <div className="max-w-site mx-auto px-5 py-5 lg:py-7 grid gap-4 lg:grid-cols-[auto_1fr] lg:gap-10 items-start">
+        <div className="hidden lg:block">
+          <div className="inline-block bg-paper rounded-2xl p-1.5 border-[3px] border-ink">
+            <img src="/brand/logo-mark.webp" alt={t('app.logoAlt')} width={250} height={80} className="h-11 w-auto" />
           </div>
-          <p className="mt-4 text-lg text-white/85 max-w-xs">{t('footer.tagline')}</p>
-          <SocialLinks />
+          <p className="mt-3 text-base text-white/80 max-w-[16rem]">{t('footer.tagline')}</p>
         </div>
-        <Column title={t('footer.explore')} links={explore} />
-        <Column title={t('footer.aboutUs')} links={about} />
-        <Column title={t('footer.policies')} links={policies} />
+        <nav aria-label={t('footer.explore')} className="grid gap-1">
+          <LinkRow links={[...explore, ...about]} />
+          <LinkRow links={policies} small />
+          <SocialLinks />
+        </nav>
       </div>
       <div className="border-t border-white/15">
-        <p className="max-w-site mx-auto px-5 py-4 text-base text-white/70">{t('footer.siteLine')}</p>
+        <p className="max-w-site mx-auto px-5 py-3 text-sm text-white/60">{t('footer.siteLine')}</p>
       </div>
     </footer>
   );
@@ -80,12 +78,12 @@ function SocialLinks() {
   ].filter(Boolean) as { href: string; label: string; Icon: typeof Facebook }[];
   if (!links.length) return null;
   return (
-    <div className="mt-5">
-      <p className="text-lg font-heading font-bold">{t('footer.follow')}</p>
+    <div className="mt-2">
+      <p className="text-base font-heading font-bold">{t('footer.follow')}</p>
       <ul className="mt-2 flex flex-wrap gap-2">
         {links.map(({ href, label, Icon }) => (
           <li key={href}>
-            <a href={href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 min-h-[3rem] px-4 rounded-2xl bg-paper text-ink border-[3px] border-ink font-bold">
+            <a href={href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 min-h-[2.75rem] px-3 rounded-xl bg-paper text-ink border-[3px] border-ink font-bold">
               <Icon size={22} strokeWidth={2.4} aria-hidden="true" />
               {label}
             </a>

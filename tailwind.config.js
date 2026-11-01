@@ -23,13 +23,13 @@ export default {
       },
       fontSize: {
         'body-base': '1.25rem',
-        'heading-xl': ['3.25rem', { lineHeight: '1.1' }],
-        'heading-lg': ['2.5rem', { lineHeight: '1.15' }],
-        'heading-md': ['2rem', { lineHeight: '1.2' }],
-        'heading-sm': ['1.5rem', { lineHeight: '1.25' }],
+        'heading-xl': ['3rem', { lineHeight: '1.1' }],
+        'heading-lg': ['2.125rem', { lineHeight: '1.15' }],
+        'heading-md': ['1.75rem', { lineHeight: '1.2' }],
+        'heading-sm': ['1.375rem', { lineHeight: '1.25' }],
       },
       spacing: {
-        touch: '3.5rem',
+        touch: '3rem',
       },
       maxWidth: {
         content: '720px',
@@ -39,8 +39,8 @@ export default {
         body: '1.6',
       },
       boxShadow: {
-        sticker: '0 5px 0 0 #10233F',
-        'sticker-lg': '6px 7px 0 0 #10233F',
+        sticker: '0 3px 0 0 #10233F',
+        'sticker-lg': '4px 5px 0 0 #10233F',
       },
     },
   },

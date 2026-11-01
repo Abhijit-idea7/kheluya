@@ -19,8 +19,8 @@ export default function PrakarPage() {
 
   return (
     <div className="max-w-site mx-auto px-4 sm:px-5 py-6 sm:py-10">
-      <Link to="/kodi" className="btn btn-quiet text-xl mb-6">
-        <ArrowLeft size={24} strokeWidth={2.6} aria-hidden="true" />
+      <Link to="/kodi" className="inline-flex items-center gap-2 min-h-[2.75rem] -ml-1 mb-2 font-heading font-bold text-lg text-ink/75 hover:text-ink">
+        <ArrowLeft size={20} strokeWidth={2.6} aria-hidden="true" />
         {t('play.allPuzzles')}
       </Link>
       {types.loading ? (

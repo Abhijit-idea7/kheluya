@@ -17,7 +17,7 @@ export default function BottomNav() {
               to={to}
               end={to === '/'}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center gap-0.5 min-h-[4.25rem] py-1.5 w-full font-heading font-bold ${
+                `flex flex-col items-center justify-center gap-0.5 min-h-[3.75rem] py-1 w-full font-heading font-bold ${
                   isActive ? 'text-ink' : 'text-ink/75'
                 }`
               }
@@ -25,11 +25,11 @@ export default function BottomNav() {
               {({ isActive }) => (
                 <>
                   <span
-                    className={`grid place-items-center h-9 w-14 rounded-full ${
+                    className={`grid place-items-center h-8 w-12 rounded-full ${
                       isActive ? 'bg-orange border-2 border-ink' : ''
                     }`}
                   >
-                    <Icon size={24} strokeWidth={2.4} aria-hidden="true" />
+                    <Icon size={22} strokeWidth={2.4} aria-hidden="true" />
                   </span>
                   <span className="text-base leading-none">{t(key)}</span>
                 </>

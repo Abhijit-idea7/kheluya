@@ -37,11 +37,11 @@ html.text-large {
 
   /* Big pressable buttons */
   .btn {
-    @apply inline-flex items-center justify-center gap-3 min-h-touch px-6 py-3 rounded-2xl border-[3px] border-ink
-      font-heading font-bold text-heading-sm leading-none shadow-sticker transition-transform;
+    @apply inline-flex items-center justify-center gap-2 min-h-touch px-5 py-2 rounded-2xl border-[3px] border-ink
+      font-heading font-bold text-[1.3rem] leading-none shadow-sticker transition-transform;
   }
   .btn:active {
-    transform: translateY(4px);
+    transform: translateY(2px);
     box-shadow: 0 1px 0 0 #10233F;
   }
   .btn-primary { @apply bg-orange text-ink; }

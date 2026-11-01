@@ -132,3 +132,27 @@ export default function ShareButtons({ puzzle, sessionId, compact = false }: Pro
     </div>
   );
 }
+
+/** A single small "मित्रांना पाठवा" link; the full share block opens only when tapped. */
+export function ShareToggle({ puzzle, sessionId }: { puzzle: Puzzle; sessionId: string }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-2">
+      {!open ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="mx-auto flex items-center gap-2 min-h-[2.75rem] px-3 font-heading font-bold text-lg text-ink/80 hover:text-ink underline underline-offset-4"
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" d="M21 3 3 10.5l7 2.5 2.5 7L21 3Zm-11 10 5-5" />
+          </svg>
+          {t('share.heading')}
+        </button>
+      ) : (
+        <ShareButtons puzzle={puzzle} sessionId={sessionId} compact />
+      )}
+    </div>
+  );
+}

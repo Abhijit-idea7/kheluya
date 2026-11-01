@@ -27,14 +27,14 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-30 bg-paper/95 backdrop-blur border-b-[3px] border-ink">
-      <div className="max-w-site mx-auto px-3 sm:px-5 py-2 flex items-center gap-3">
+      <div className="max-w-site mx-auto px-3 sm:px-5 py-1.5 flex items-center gap-3">
         <Link to="/" className="shrink min-w-0" aria-label={t('nav.home')}>
           <img
             src="/brand/logo-mark.webp"
             alt={t('app.logoAlt')}
             width={250}
             height={80}
-            className="h-12 sm:h-14 w-auto max-w-full"
+            className="h-10 sm:h-12 w-auto max-w-full"
           />
         </Link>
 
@@ -46,7 +46,7 @@ export default function Header() {
                   to={to}
                   end={to === '/'}
                   className={({ isActive }) =>
-                    `flex items-center min-h-touch px-4 rounded-2xl font-heading font-bold text-[1.35rem] ${
+                    `flex items-center min-h-[2.75rem] px-4 rounded-2xl font-heading font-bold text-[1.25rem] ${
                       isActive ? 'bg-orange-soft text-ink' : 'text-ink hover:bg-cream'
                     }`
                   }
@@ -61,14 +61,14 @@ export default function Header() {
         <div className="ml-auto flex items-center gap-2 shrink-0">
           <button
             onClick={toggleLang}
-            className="min-h-[3rem] px-3 sm:px-4 rounded-2xl bg-paper border-[3px] border-ink font-heading font-bold text-lg leading-none"
+            className="min-h-[2.75rem] min-w-[2.75rem] px-2.5 rounded-xl bg-paper border-2 border-ink font-heading font-bold text-base leading-none"
             aria-label={t('lang.label')}
           >
-            {i18n.language === 'mr' ? t('app.switchToEnglish') : t('app.switchToMarathi')}
+            {i18n.language === 'mr' ? 'EN' : 'मराठी'}
           </button>
           <button
             onClick={() => setTextLarge((v) => !v)}
-            className={`min-h-[3rem] min-w-[3rem] px-3 rounded-2xl border-[3px] border-ink font-heading font-extrabold text-xl leading-none ${
+            className={`min-h-[2.75rem] min-w-[2.75rem] px-2.5 rounded-xl border-2 border-ink font-heading font-extrabold text-lg leading-none ${
               textLarge ? 'bg-orange text-ink' : 'bg-navy text-white'
             }`}
             aria-pressed={textLarge}
