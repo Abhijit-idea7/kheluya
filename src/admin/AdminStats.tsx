@@ -216,8 +216,8 @@ function Overview({ daily }: { daily: Daily }) {
   return (
     <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
       <Kpi label="Players" value={n(t.players)} sub="different people" spark={s((d) => d.players)} />
-      <Kpi label="Opens" value={n(t.opens)} sub={t.players ? `${(t.opens / t.players).toFixed(1)} per player` : ''} spark={s((d) => d.opens)} />
-      <Kpi label="Completed" value={n(t.completed)} sub={`${pct(t.completed, t.started)} of those who started`} spark={s((d) => d.completed)} />
+      <Kpi label="Opens" value={n(t.opens)} sub={t.players ? `${(t.opens / t.players).toFixed(1)} visits per player` : 'visits'} spark={s((d) => d.opens)} />
+      <Kpi label="Completed" value={n(t.completed)} sub={`${pct(t.completed, t.started)} of people who started`} spark={s((d) => d.completed)} />
       <Kpi label="Typical time" value={mmss(t.median_solve_ms)} sub="to finish a puzzle" spark={s((d) => d.median_solve_ms)} />
       <Kpi label="Play time" value={playLabel(t.play_ms)} sub={t.players ? `${minutes(t.play_ms / t.players)} min per player` : ''} spark={s((d) => d.play_ms)} />
       <Kpi label="Shares" value={n(t.shares)} sub={t.shares ? `WhatsApp ${pct(t.share_whatsapp, t.shares)}` : ''} spark={s((d) => d.shares)} />
@@ -254,6 +254,7 @@ function PuzzleDetail({ r, from, to }: { r: Row; from: string; to: string }) {
         <div className="text-[0.95rem]">
           {fact('Type', r.type_name)}
           {fact('Released', r.live_date ? longDate(r.live_date) : '–')}
+          {fact('Visits', r.players ? `${n(r.opens)} (${(r.opens / r.players).toFixed(1)} per player)` : n(r.opens))}
           {fact('Typical time', mmss(r.median_solve_ms))}
           {fact('Average time', mmss(r.avg_solve_ms))}
           {fact('Play time', playLabel(r.total_play_ms))}
@@ -262,16 +263,16 @@ function PuzzleDetail({ r, from, to }: { r: Row; from: string; to: string }) {
         </div>
       </div>
       <div className="rounded-xl bg-white border border-line p-4">
-        <h4 className="font-bold mb-3">How far people got</h4>
+        <h4 className="font-bold mb-3">How far people got <span className="font-normal text-ink/55">(people)</span></h4>
         <Bars
           fmt={n}
           items={[
-            { label: 'Opened', value: r.opens },
-            { label: 'Started', value: r.started, note: r.opens ? `${pct(r.started, r.opens)}` : undefined },
+            { label: 'Opened', value: r.players },
+            { label: 'Started', value: r.started, note: r.players ? `${pct(r.started, r.players)}` : undefined },
             { label: 'Completed', value: r.completed, note: r.started ? `${pct(r.completed, r.started)}` : undefined },
           ]}
         />
-        <p className="mt-3 text-sm text-ink/55">Completed % is out of those who started.</p>
+        <p className="mt-3 text-sm text-ink/55">Each person counts once, however many times they opened it. Completed % is out of people who started.</p>
       </div>
       <div className="rounded-xl bg-white border border-line p-4">
         <h4 className="font-bold mb-3">Shares by button <span className="font-normal text-ink/55">({n(r.shares)})</span></h4>
