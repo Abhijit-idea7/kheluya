@@ -7,9 +7,27 @@
  *   CK.link                                   the short link to put in share messages
  * Share buttons are also detected automatically from WhatsApp / Facebook / Instagram links.
  */
-export function bridgeScript(shortLink: string): string {
+/** Saved-progress keys shared by every puzzle (player settings), never prefixed. */
+export const SHARED_STORAGE_KEYS = ['ck-sound', 'sk-big'];
+
+export function bridgeScript(shortLink: string, storagePrefix = ''): string {
   const js = `(function(){
   if (window.CK) return;
+  // Each puzzle gets its own saved-progress space (e.g. "p12:sk-cw"), so next week's edition of a
+  // puzzle type never opens with last week's progress. Settings in SHARED stay common to all puzzles.
+  (function(prefix, shared){
+    if (!prefix) return;
+    try {
+      var P = Storage.prototype, g = P.getItem, st = P.setItem, rm = P.removeItem;
+      var k = function(key){ key = String(key); return shared.indexOf(key) >= 0 ? key : prefix + key; };
+      P.getItem = function(key){ return g.call(this, k(key)); };
+      P.setItem = function(key, value){ return st.call(this, k(key), value); };
+      P.removeItem = function(key){ return rm.call(this, k(key)); };
+      P.clear = function(){ var own = [];
+        for (var i = 0; i < this.length; i++) { var x = this.key(i); if (x && x.indexOf(prefix) === 0) own.push(x); }
+        for (var j = 0; j < own.length; j++) rm.call(this, own[j]); };
+    } catch(e) {}
+  })(${JSON.stringify(storagePrefix)}, ${JSON.stringify(SHARED_STORAGE_KEYS)});
   var post = function(m){ m.__ck = 1; try { parent.postMessage(m, '*'); } catch(e) {} };
   var started = false, done = false, explicitShareAt = 0;
   function start(){ if (started) return; started = true; post({ type: 'started' }); }
@@ -82,11 +100,11 @@ export function bridgeScript(shortLink: string): string {
 }
 
 /** Put <base> (so sounds/images load from the puzzle's folder) and the bridge at the top of <head>. */
-export function preparePuzzleHtml(html: string, folderUrl: string, shortLink: string): string {
+export function preparePuzzleHtml(html: string, folderUrl: string, shortLink: string, storagePrefix = ''): string {
   // Puzzles built to the Puzzle Standard v1 read SHARE_URL; inside the site they cannot see their own
   // address, so hand them the puzzle's short link.
   html = html.replace(/const SHARE_URL = (['"])\1;/, "const SHARE_URL = (window.CK && window.CK.link) || '';");
-  const head = `<base href="${folderUrl.replace(/"/g, '%22')}/">${bridgeScript(shortLink)}`;
+  const head = `<base href="${folderUrl.replace(/"/g, '%22')}/">${bridgeScript(shortLink, storagePrefix)}`;
   if (/<head[^>]*>/i.test(html)) return html.replace(/<head[^>]*>/i, (m) => `${m}${head}`);
   if (/<html[^>]*>/i.test(html)) return html.replace(/<html[^>]*>/i, (m) => `${m}<head>${head}</head>`);
   return `<!doctype html><html><head>${head}</head><body>${html}</body></html>`;

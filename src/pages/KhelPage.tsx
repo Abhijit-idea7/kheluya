@@ -42,7 +42,7 @@ export default function KhelPage() {
         if (!res.ok) throw new Error(`file ${res.status}`);
         const text = await res.text();
         if (!alive) return;
-        setHtml(preparePuzzleHtml(text, publicFileUrl(p.file_folder), shortLink(p.number)));
+        setHtml(preparePuzzleHtml(text, publicFileUrl(p.file_folder), shortLink(p.number), `p${p.number}:`));
         setPhase('ready');
       } catch {
         if (alive) setPhase('error');
