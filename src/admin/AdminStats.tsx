@@ -227,6 +227,37 @@ function Overview({ daily }: { daily: Daily }) {
   );
 }
 
+// ---------- repeat visits ----------
+function VisitPattern({ puzzleId, from, to }: { puzzleId: string; from: string; to: string }) {
+  const [v, setV] = useState<Record<string, number> | null>(null);
+  useEffect(() => {
+    let alive = true;
+    supabase!.rpc('admin_visit_pattern', { p_puzzle: puzzleId, p_from: from, p_to: to }).then(({ data }) => {
+      if (alive) setV(Object.fromEntries(((data ?? []) as { bucket: string; n: number }[]).map((r) => [r.bucket, Number(r.n)])));
+    });
+    return () => { alive = false; };
+  }, [puzzleId, from, to]);
+  if (!v) return <p className="animate-pulse text-ink/60">Loading…</p>;
+  const g = (k: string) => v[k] ?? 0;
+  return (
+    <>
+      <p className="text-sm font-bold text-ink/60 mb-2">Players who opened it</p>
+      <Bars fmt={n} items={[
+        { label: 'Once', value: g('visits_1') },
+        { label: 'Twice', value: g('visits_2') },
+        { label: '3+ times', value: g('visits_3plus') },
+      ]} />
+      <p className="text-sm font-bold text-ink/60 mt-4 mb-2">Repeat opens, time since last</p>
+      <Bars fmt={n} items={[
+        { label: 'Under 2 min', value: g('gap_short') },
+        { label: '2–60 min', value: g('gap_hour') },
+        { label: 'Over 1 hour', value: g('gap_later') },
+      ]} />
+      <p className="mt-3 text-sm text-ink/55">Under 2 min ≈ page reloaded or back-and-forth. Over 1 hour ≈ came back later.</p>
+    </>
+  );
+}
+
 // ---------- puzzle detail card ----------
 function shareItems(r: { wa: number; fb: number; ig: number; copy: number; phone: number }) {
   return [
@@ -248,7 +279,7 @@ function PuzzleDetail({ r, from, to }: { r: Row; from: string; to: string }) {
     </div>
   );
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       <div className="rounded-xl bg-white border border-line p-4">
         <h4 className="font-bold mb-2">Details</h4>
         <div className="text-[0.95rem]">
@@ -275,6 +306,10 @@ function PuzzleDetail({ r, from, to }: { r: Row; from: string; to: string }) {
         <p className="mt-3 text-sm text-ink/55">Each person counts once, however many times they opened it. Completed % is out of people who started.</p>
       </div>
       <div className="rounded-xl bg-white border border-line p-4">
+        <h4 className="font-bold mb-3">Repeat visits</h4>
+        <VisitPattern puzzleId={r.puzzle_id} from={from} to={to} />
+      </div>
+      <div className="rounded-xl bg-white border border-line p-4">
         <h4 className="font-bold mb-3">Shares by button <span className="font-normal text-ink/55">({n(r.shares)})</span></h4>
         {r.shares ? (
           <Bars fmt={n} items={shareItems({ wa: r.share_whatsapp, fb: r.share_facebook, ig: r.share_instagram, copy: r.share_copy, phone: r.share_native })} />
@@ -282,7 +317,7 @@ function PuzzleDetail({ r, from, to }: { r: Row; from: string; to: string }) {
           <p className="text-ink/60">No shares yet.</p>
         )}
       </div>
-      <div className="lg:col-span-3 rounded-xl bg-white border border-line p-4">
+      <div className="md:col-span-2 xl:col-span-4 rounded-xl bg-white border border-line p-4">
         {error && <p className="font-bold text-[#8A1C14]">{error}</p>}
         {!data && !error && <p className="animate-pulse">Loading days…</p>}
         {data && <Trend compact daily={data} title="Day by day" csvName={`chala-kheluya-${r.number}-daily.csv`} />}
