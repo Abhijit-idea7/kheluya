@@ -1,6 +1,6 @@
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/supabase';
 
-export type EventName = 'opened' | 'started' | 'completed' | 'shared' | 'arrived' | 'left';
+export type EventName = 'opened' | 'started' | 'completed' | 'shared' | 'arrived' | 'left' | 'suggested';
 export type Channel = 'whatsapp' | 'facebook' | 'instagram' | 'copy' | 'native' | 'other';
 
 const PLAYER_KEY = 'ck-player';

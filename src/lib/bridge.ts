@@ -56,6 +56,47 @@ export function bridgeScript(shortLink: string, storagePrefix = ''): string {
              mistakes: d.mistakes != null ? d.mistakes : s.mistakes, hints: d.hints != null ? d.hints : s.hints }); },
     shared: function(c){ explicitShareAt = Date.now(); post({ type: 'shared', channel: c || 'other' }); }
   };
+  // "पुढचे कोडे" card from the site: placed under the puzzle's share block (or pinned at the bottom).
+  function go(to){ try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen(); } catch(e) {}
+    post({ type: 'navigate', to: to }); }
+  window.addEventListener('message', function(e){
+    var d = e.data; if (e.source !== parent || !d || d.__ckHost !== 1 || d.type !== 'next') return;
+    if (!document.getElementById('ck-next-css')) {
+      var st = document.createElement('style'); st.id = 'ck-next-css';
+      st.textContent = '.ck-next{box-sizing:border-box;width:100%;margin:14px 0 4px;padding:14px;background:#FFFAF0;color:#10233F;border:2px solid #10233F;border-radius:18px;box-shadow:0 4px 0 #10233F;font-family:Mukta,"Baloo 2",system-ui,sans-serif;text-align:left}' +
+        '.ck-next.pin{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);width:min(94vw,440px);z-index:2147483646}' +
+        '.ck-next-k{font-weight:800;font-size:15px;color:#D97B00;margin:0 0 8px;display:flex;justify-content:space-between;align-items:center}' +
+        '.ck-next-r{display:flex;gap:12px;align-items:center}' +
+        '.ck-next-t{flex:none;width:52px;height:52px;display:grid;place-items:center;border-radius:12px;border:2px solid #8C5E25;background:linear-gradient(180deg,#F6DCA8,#E2B874);box-shadow:inset 0 -5px 0 #C99550;font-weight:800;font-size:24px;color:#10233F}' +
+        '.ck-next-n{font-weight:800;font-size:20px;line-height:1.2}.ck-next-s{font-size:15px;color:#4d5a6c;margin-top:2px}' +
+        '.ck-next-go{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:54px;margin-top:12px;border:2px solid #10233F;border-radius:14px;background:#F39200;color:#10233F;box-shadow:0 3px 0 #10233F;font:800 20px Mukta,"Baloo 2",sans-serif;cursor:pointer}' +
+        '.ck-next-go:active{transform:translateY(2px);box-shadow:0 1px 0 #10233F}' +
+        '.ck-next-more{display:block;margin:8px auto 0;min-height:40px;background:none;border:0;color:#10233F;font:700 16px Mukta,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}' +
+        '.ck-next-x{width:36px;height:36px;border-radius:10px;border:2px solid #10233F;background:#fff;color:#10233F;font-weight:800;cursor:pointer}';
+      document.head.appendChild(st);
+    }
+    var old = document.getElementById('ck-next'); if (old) old.remove();
+    var box = document.createElement('div'); box.id = 'ck-next'; box.className = 'ck-next';
+    var k = document.createElement('div'); k.className = 'ck-next-k'; var kt = document.createElement('span'); kt.textContent = String(d.kicker || ''); k.appendChild(kt);
+    var r = document.createElement('div'); r.className = 'ck-next-r';
+    var t = document.createElement('div'); t.className = 'ck-next-t'; t.setAttribute('aria-hidden', 'true'); t.textContent = String(d.tile || '');
+    var tx = document.createElement('div'); var n = document.createElement('div'); n.className = 'ck-next-n'; n.textContent = String(d.title || '');
+    var sb = document.createElement('div'); sb.className = 'ck-next-s'; sb.textContent = String(d.sub || ''); tx.appendChild(n); tx.appendChild(sb);
+    r.appendChild(t); r.appendChild(tx);
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'ck-next-go'; b.textContent = '\u25B6 ' + String(d.cta || '');
+    b.onclick = function(){ go(String(d.to)); };
+    var m = document.createElement('button'); m.type = 'button'; m.className = 'ck-next-more'; m.textContent = String(d.more || '');
+    m.onclick = function(){ go('/kodi'); };
+    box.appendChild(k); box.appendChild(r); box.appendChild(b); box.appendChild(m);
+    var anchor = document.getElementById('dNote') || document.getElementById('dShareBox');
+    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(box, anchor.nextSibling);
+    else {
+      box.className += ' pin';
+      var x = document.createElement('button'); x.type = 'button'; x.className = 'ck-next-x'; x.textContent = '\u2715'; x.setAttribute('aria-label', String(d.close || 'Close'));
+      x.onclick = function(){ box.remove(); }; k.appendChild(x);
+      (document.body || document.documentElement).appendChild(box);
+    }
+  });
   // Messages from the site, shown inside the puzzle so they are visible in full screen too.
   window.addEventListener('message', function(e){
     var d = e.data; if (e.source !== parent || !d || d.__ckHost !== 1 || d.type !== 'toast') return;

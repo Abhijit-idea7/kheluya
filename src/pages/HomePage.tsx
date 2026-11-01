@@ -5,6 +5,9 @@ import { Clock, Smartphone, Hand, Send, Play } from 'lucide-react';
 import Tile from '@/components/Tile';
 import Illustration from '@/components/Illustration';
 import ShareButtons from '@/components/ShareButtons';
+import { ForYouRow, NextCard } from '@/components/SuggestCards';
+import { doneIds } from '@/lib/progress';
+import { isQuick, suggest } from '@/lib/suggest';
 import { getLivePuzzles } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
 import { pick, type Lang } from '@/lib/types';
@@ -16,13 +19,19 @@ export default function HomePage() {
   const lang: Lang = i18n.language === 'en' ? 'en' : 'mr';
   const sessionId = useMemo(() => newSessionId(), []);
   const todayIso = istToday();
-  const { data: recent, loading } = useAsync(() => getLivePuzzles({ limit: 21 }), []);
-  const today = recent?.[0] ?? null;
+  const { data: recent, loading } = useAsync(() => getLivePuzzles({ limit: 60 }), []);
+  // The daily puzzle is the newest non-quick one; quick puzzles get their own small card.
+  const main = (recent ?? []).filter((p) => !isQuick(p));
+  const today = main[0] ?? null;
+  const quickList = (recent ?? []).filter(isQuick);
+  const done = doneIds();
+  const quick = quickList.find((p) => !done.has(p.id)) ?? quickList[0] ?? null;
+  const forYou = recent ? suggest(recent, 'home', { exclude: [today?.id ?? '', quick?.id ?? ''], limit: 3 }) : [];
   const isTodayFresh = today?.live_date === todayIso;
   const mon = mondayOf(todayIso);
   const week = Array.from({ length: 7 }, (_, i) => {
     const date = addDays(mon, i);
-    return { date, puzzle: (recent ?? []).find((p) => p.live_date === date) ?? null };
+    return { date, puzzle: main.find((p) => p.live_date === date) ?? null };
   });
 
   const steps = [
@@ -94,8 +103,16 @@ export default function HomePage() {
               <p className="text-xl">{t('home.today.none')}</p>
             </div>
           )}
+
+          {quick && (
+            <div className="mt-6">
+              <NextCard suggestion={{ puzzle: quick, reason: 'quick' }} kicker={t('quick.kicker')} from="qk" tone="green" />
+            </div>
+          )}
         </div>
       </section>
+
+      <ForYouRow items={forYou} />
 
       {/* THIS WEEK */}
       <section className="max-w-site mx-auto px-4 sm:px-5 mt-12 lg:mt-16" aria-labelledby="week-h">

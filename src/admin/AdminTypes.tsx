@@ -6,7 +6,7 @@ import { Badge, btnPrimary, btnQuiet, Card, Field, input } from '@/admin/ui';
 
 type Draft = Omit<PuzzleType, 'id' | 'card_image_path' | 'color'> & { id?: string };
 const blank: Draft = {
-  slug: '', name_mr: '', name_en: '', about_mr: '', about_en: '', how_mr: '', how_en: '', tile: 'क', sort_order: 100, is_active: true,
+  slug: '', name_mr: '', name_en: '', about_mr: '', about_en: '', how_mr: '', how_en: '', tile: 'क', sort_order: 100, is_active: true, is_quick: false,
 };
 
 export default function AdminTypes() {
@@ -78,6 +78,13 @@ export default function AdminTypes() {
               <input type="checkbox" className="h-5 w-5" checked={draft.is_active} onChange={(e) => set('is_active', e.target.checked)} />
               Active (shown on the site)
             </label>
+            <label className="flex items-start gap-2 mt-6 font-bold sm:col-span-2">
+              <input type="checkbox" className="h-5 w-5 mt-0.5" checked={!!draft.is_quick} onChange={(e) => set('is_quick', e.target.checked)} />
+              <span>
+                Quick puzzle (झटपट कोडे)
+                <span className="block text-sm font-normal text-ink/60">Shown in the green quick card on Home and suggested to players who leave a harder puzzle early. Not used as the daily puzzle.</span>
+              </span>
+            </label>
           </div>
           <div className="mt-4 flex gap-3">
             <button className={btnPrimary} onClick={save} disabled={busy}>{busy ? 'Saving…' : 'Save type'}</button>
@@ -93,7 +100,10 @@ export default function AdminTypes() {
             <div className="min-w-0 flex-1">
               <div className="font-bold text-lg">{t.name_mr} <span className="text-ink/60 font-normal">· {t.name_en}</span></div>
               <div className="text-sm text-ink/60">/prakar/{t.slug} · order {t.sort_order}</div>
-              {!t.is_active && <Badge tone="grey">Inactive</Badge>}
+              <div className="mt-1 flex gap-1.5">
+                {t.is_quick && <Badge tone="green">Quick</Badge>}
+                {!t.is_active && <Badge tone="grey">Inactive</Badge>}
+              </div>
             </div>
             <button className={btnQuiet} onClick={() => { setDraft({ ...t }); setMsg(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Edit</button>
           </Card>

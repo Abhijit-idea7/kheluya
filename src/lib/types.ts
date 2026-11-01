@@ -14,6 +14,8 @@ export type PuzzleType = {
   card_image_path: string | null;
   sort_order: number;
   is_active: boolean;
+  /** short, easy-going type shown as "झटपट कोडे" */
+  is_quick?: boolean;
 };
 
 export type Difficulty = 'easy' | 'medium' | 'hard';

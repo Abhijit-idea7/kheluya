@@ -6,6 +6,8 @@ import Tile from '@/components/Tile';
 import PuzzleCard from '@/components/PuzzleCard';
 import ShareButtons from '@/components/ShareButtons';
 import Illustration from '@/components/Illustration';
+import { NextCard } from '@/components/SuggestCards';
+import { suggest } from '@/lib/suggest';
 import { getLivePuzzles, getPlayCounts, getPuzzleByNumber, getTimeStats } from '@/lib/api';
 import { myTime } from '@/lib/myTimes';
 import { useAsync } from '@/lib/useAsync';
@@ -15,7 +17,7 @@ import { newSessionId, readRef, trackArrival } from '@/lib/track';
 
 export default function KodiEkPage() {
   const { n } = useParams();
-  const { search } = useLocation();
+  const { search, state } = useLocation() as { search: string; state?: { leftEarly?: boolean } };
   const { t, i18n } = useTranslation();
   const lang: Lang = i18n.language === 'en' ? 'en' : 'mr';
   const num = Number(n);
@@ -27,6 +29,11 @@ export default function KodiEkPage() {
     [puzzle?.id],
   );
   const { data: counts } = useAsync(() => getPlayCounts(), []);
+  const leftEarly = !!state?.leftEarly;
+  const { data: alt } = useAsync(
+    () => (puzzle && leftEarly ? getLivePuzzles({ limit: 60 }).then((l) => suggest(l, 'left', { exclude: [puzzle.id], limit: 1 })[0] ?? null) : Promise.resolve(null)),
+    [puzzle?.id, leftEarly],
+  );
   const { data: times } = useAsync(() => (puzzle ? getTimeStats(puzzle.id) : Promise.resolve(null)), [puzzle?.id]);
 
   // A visitor who came from a shared link
@@ -62,6 +69,12 @@ export default function KodiEkPage() {
         <ArrowLeft size={24} strokeWidth={2.6} aria-hidden="true" />
         {t('play.allPuzzles')}
       </Link>
+
+      {alt && (
+        <div className="mb-8 max-w-xl">
+          <NextCard suggestion={alt} kicker={t('next.leftKicker')} from="lv" tone="green" />
+        </div>
+      )}
 
       <div className="grid gap-8 lg:grid-cols-[1.2fr_1fr] items-start">
         <article className="sticker relative overflow-hidden p-5 sm:p-7">

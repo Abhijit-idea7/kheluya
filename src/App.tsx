@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
 import Layout from '@/layout/Layout';
 import HomePage from '@/pages/HomePage';
 import KodiPage from '@/pages/KodiPage';
@@ -28,11 +28,17 @@ import ShortNumberRedirect from '@/pages/ShortNumberRedirect';
 
 const AdminPage = lazy(() => import('@/pages/AdminPage'));
 
+/** A new play page (and counting session) for every puzzle, also when moving from one to the next. */
+function KhelRoute() {
+  const { n } = useParams();
+  return <KhelPage key={n} />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/khel/:n" element={<KhelPage />} />
+        <Route path="/khel/:n" element={<KhelRoute />} />
         <Route path="/admin/*" element={<Suspense fallback={<p className="p-6">Loading…</p>}><AdminPage /></Suspense>} />
         <Route path="/:n" element={<ShortNumberRedirect />} />
         <Route element={<Layout />}>

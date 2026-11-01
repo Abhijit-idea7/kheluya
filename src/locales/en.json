@@ -273,5 +273,26 @@
     "typical": "Most people solve it in {{t}}",
     "mostShort": "most people {{t}}",
     "close": "Close"
+  },
+  "next": {
+    "kicker": "Play next",
+    "kickerResume": "Finish what you started",
+    "play": "Play",
+    "resume": "Continue",
+    "more": "See more puzzles",
+    "leftKicker": "Want to try something different?"
+  },
+  "quick": {
+    "kicker": "Quick puzzle · play it with your grandchildren too"
+  },
+  "foryou": {
+    "title": "For you",
+    "sub": "Puzzles you have not played yet, and ones you left half-way.",
+    "reason": {
+      "resume": "Half-way",
+      "quick": "Quick",
+      "liked": "You like these",
+      "new": "New"
+    }
   }
 }

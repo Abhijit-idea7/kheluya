@@ -8,11 +8,11 @@ type Row = {
   opens: number; players: number; started: number; completed: number;
   median_solve_ms: number | null; avg_solve_ms: number | null; total_play_ms: number;
   shares: number; share_whatsapp: number; share_facebook: number; share_instagram: number; share_copy: number; share_native: number;
-  arrivals: number;
+  arrivals: number; suggested: number;
 };
 const NUMERIC: (keyof Row)[] = [
   'opens', 'players', 'started', 'completed', 'median_solve_ms', 'avg_solve_ms', 'total_play_ms', 'shares',
-  'share_whatsapp', 'share_facebook', 'share_instagram', 'share_copy', 'share_native', 'arrivals',
+  'share_whatsapp', 'share_facebook', 'share_instagram', 'share_copy', 'share_native', 'arrivals', 'suggested',
 ];
 
 type Day = {
@@ -88,7 +88,7 @@ export default function AdminStats() {
       started: r.started, completed: r.completed, completion_rate: pct(r.completed, r.started),
       median_solve_minutes: r.median_solve_ms == null ? '' : (r.median_solve_ms / 60000).toFixed(1),
       play_minutes: Math.round(r.total_play_ms / 60000), shares: r.shares, whatsapp: r.share_whatsapp, facebook: r.share_facebook,
-      instagram: r.share_instagram, copy_link: r.share_copy, phone_share: r.share_native, arrivals_from_shares: r.arrivals,
+      instagram: r.share_instagram, copy_link: r.share_copy, phone_share: r.share_native, arrivals_from_shares: r.arrivals, from_suggestions: r.suggested,
     })));
 
   const totalsOf = shown;
@@ -106,7 +106,7 @@ export default function AdminStats() {
       {error && <p className="mt-4 font-bold text-[#8A1C14]">{error}</p>}
 
       {rows && (
-        <div className="mt-5 grid gap-3 grid-cols-2 md:grid-cols-4 lg:grid-cols-7">
+        <div className="mt-5 grid gap-3 grid-cols-2 md:grid-cols-4 lg:grid-cols-8">
           {[
             ['Opens', n(sum(totalsOf, 'opens'))],
             ['Started', n(sum(totalsOf, 'started'))],
@@ -115,6 +115,7 @@ export default function AdminStats() {
             ['Play time', `${playMin(sum(totalsOf, 'total_play_ms'))} min`],
             ['Shares', n(sum(totalsOf, 'shares'))],
             ['Came via shares (people)', n(sum(totalsOf, 'arrivals'))],
+            ['From suggestions', n(sum(totalsOf, 'suggested'))],
           ].map(([k, v]) => (
             <Card key={k} className="!p-3">
               <div className="text-sm text-ink/70">{k}</div>
@@ -142,7 +143,7 @@ export default function AdminStats() {
         <table className="mt-3 w-full text-left rounded-2xl border-2 border-ink bg-paper border-separate border-spacing-0 overflow-hidden">
           <thead className="bg-cream">
             <tr>
-              {['Puzzle type', 'Puzzles', 'Opens', 'Players', 'Started', 'Completed', 'Done %', 'Play time', 'Shares', 'Came via shares'].map((h) => (
+              {['Puzzle type', 'Puzzles', 'Opens', 'Players', 'Started', 'Completed', 'Done %', 'Play time', 'Shares', 'Came via shares', 'From suggestions'].map((h) => (
                 <th key={h} className={th}>{h}</th>
               ))}
             </tr>
@@ -163,6 +164,7 @@ export default function AdminStats() {
                   <ShareSplit wa={sum(list, 'share_whatsapp')} fb={sum(list, 'share_facebook')} ig={sum(list, 'share_instagram')} copy={sum(list, 'share_copy')} phone={sum(list, 'share_native')} />
                 </td>
                 <td className={`${td} border-t border-line`}>{n(sum(list, 'arrivals'))}</td>
+                <td className={`${td} border-t border-line`}>{n(sum(list, 'suggested'))}</td>
               </tr>
             ))}
           </tbody>
@@ -173,7 +175,7 @@ export default function AdminStats() {
         <table className="mt-3 w-full text-left rounded-2xl border-2 border-ink bg-paper border-separate border-spacing-0 overflow-hidden">
           <thead className="bg-cream">
             <tr>
-              {['No.', 'Puzzle', 'Released', 'Opens', 'Players', 'Started', 'Completed', 'Median time', 'Play time', 'Shares', 'Came via shares'].map((h) => (
+              {['No.', 'Puzzle', 'Released', 'Opens', 'Players', 'Started', 'Completed', 'Median time', 'Play time', 'Shares', 'Came via shares', 'From suggestions'].map((h) => (
                 <th key={h} className={th}>{h}</th>
               ))}
             </tr>
@@ -206,10 +208,11 @@ export default function AdminStats() {
                     <ShareSplit wa={r.share_whatsapp} fb={r.share_facebook} ig={r.share_instagram} copy={r.share_copy} phone={r.share_native} />
                   </td>
                   <td className={`${td} border-t border-line`}>{n(r.arrivals)}</td>
+                  <td className={`${td} border-t border-line`}>{n(r.suggested)}</td>
                 </tr>
                 {open === r.puzzle_id && (
                   <tr>
-                    <td colSpan={11} className="border-t border-line bg-cream/60 p-3 sm:p-4">
+                    <td colSpan={12} className="border-t border-line bg-cream/60 p-3 sm:p-4">
                       <DayByDay puzzleId={r.puzzle_id} from={from} to={to} name={r.name_mr} />
                     </td>
                   </tr>
