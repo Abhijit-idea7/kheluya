@@ -217,7 +217,7 @@ function Overview({ daily }: { daily: Daily }) {
     <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
       <Kpi label="Players" value={n(t.players)} sub="different people" spark={s((d) => d.players)} />
       <Kpi label="Opens" value={n(t.opens)} sub={t.players ? `${(t.opens / t.players).toFixed(1)} visits per player` : 'visits'} spark={s((d) => d.opens)} />
-      <Kpi label="Completed" value={n(t.completed)} sub={`${pct(t.completed, t.started)} of people who started`} spark={s((d) => d.completed)} />
+      <Kpi label="Completed" value={n(t.completed)} sub={`${pct(t.completed, t.started)} of puzzles started`} spark={s((d) => d.completed)} />
       <Kpi label="Typical time" value={mmss(t.median_solve_ms)} sub="to finish a puzzle" spark={s((d) => d.median_solve_ms)} />
       <Kpi label="Play time" value={playLabel(t.play_ms)} sub={t.players ? `${minutes(t.play_ms / t.players)} min per player` : ''} spark={s((d) => d.play_ms)} />
       <Kpi label="Shares" value={n(t.shares)} sub={t.shares ? `WhatsApp ${pct(t.share_whatsapp, t.shares)}` : ''} spark={s((d) => d.shares)} />
