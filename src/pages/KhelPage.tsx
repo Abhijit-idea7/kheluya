@@ -197,6 +197,7 @@ export default function KhelPage() {
   }, [puzzle, lang]);
 
   const name = puzzle ? pick(puzzle, 'name', lang) : '';
+  const debug = new URLSearchParams(search).get('ckdebug') === '1';
 
   return (
     <div className="h-[100dvh] flex flex-col bg-paper">
@@ -220,6 +221,7 @@ export default function KhelPage() {
         <img src="/brand/logo-mark.webp" alt="" aria-hidden="true" width={250} height={80} className="ml-auto h-10 w-auto hidden sm:block" />
       </div>
 
+      {debug && <ShareDiag frameRef={frameRef} />}
       {phase === 'ready' ? (
         <iframe
           ref={frameRef}
@@ -247,4 +249,19 @@ export default function KhelPage() {
       )}
     </div>
   );
+}
+
+/** ?ckdebug=1 — a small box showing each step of the WhatsApp picture share (for checking on a phone). */
+function ShareDiag({ frameRef }: { frameRef: React.RefObject<HTMLIFrameElement | null> }) {
+  const [txt, setTxt] = useState('');
+  useEffect(() => {
+    const id = setInterval(() => {
+      let d: unknown = null;
+      try { d = (frameRef.current?.contentWindow as unknown as { __ckDiag?: unknown })?.__ckDiag ?? null; } catch { d = 'no access'; }
+      const share = typeof navigator !== 'undefined' && 'share' in navigator;
+      setTxt(`${JSON.stringify(d)} | site share:${share} | ${navigator.userAgent.slice(0, 80)}`);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [frameRef]);
+  return <div className="shrink-0 bg-black text-white text-xs p-2 break-all">{txt || 'checking…'}</div>;
 }
