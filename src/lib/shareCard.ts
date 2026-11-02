@@ -122,7 +122,7 @@ export async function makeChallengeCard(p: Puzzle, r: ResultCard): Promise<Blob>
   ctx.drawImage(logo, (W - lw) / 2, 50, lw, lh);
 
   // result card
-  const top = Math.round(50 + lh + 36), ch = r.big && r.time ? 600 : 530;
+  const top = Math.round(50 + lh + 36), ch = r.big && r.time ? 540 : 470;
   roundRect(ctx, 70 + 12, top + 14, 940, ch, 48);
   ctx.fillStyle = '#10233F';
   ctx.fill();
@@ -134,26 +134,24 @@ export async function makeChallengeCard(p: Puzzle, r: ResultCard): Promise<Blob>
   ctx.stroke();
 
   const mr = (v: string | number) => String(v).replace(/[0-9]/g, (d) => '०१२३४५६७८९'[Number(d)]);
+  const typeName = p.type?.name_mr ?? p.name_mr;
+  // "मी अक्षर-सुडोकू सोडवले!" — or "खेळले" when the puzzle's own title shows it was not fully solved
+  const solved = !r.title || r.title.includes('!');
   ctx.textAlign = 'center';
   ctx.fillStyle = '#D97B00';
   ctx.font = '700 46px "Baloo 2", Mukta, sans-serif';
-  ctx.fillText(`${p.type?.name_mr ?? p.name_mr} · कोडे क्र. ${mr(p.number)}`, 540, top + 82, 860);
+  ctx.fillText(`चला खेळूया · कोडे क्र. ${mr(p.number)}`, 540, top + 90, 860);
   ctx.fillStyle = '#10233F';
-  ctx.font = '800 80px "Baloo 2", Mukta, sans-serif';
-  ctx.fillText(r.title || 'मी सोडवले!', 540, top + 190, 860);
+  ctx.font = '800 84px "Baloo 2", Mukta, sans-serif';
+  ctx.fillText(`मी ${typeName} ${solved ? 'सोडवले' : 'खेळले'}!`, 540, top + 205, 880);
   ctx.fillStyle = '#D97B00';
   const big = r.big || (r.time ? `⏱ ${r.time}` : '');
   ctx.font = `800 ${big.length > 12 ? 112 : 150}px "Baloo 2", Mukta, sans-serif`;
-  ctx.fillText(big, 540, top + 375, 880);
-  if (r.line) {
-    ctx.fillStyle = '#4D5A6C';
-    ctx.font = '600 46px Mukta, sans-serif';
-    ctx.fillText(r.line, 540, top + 470, 860);
-  }
+  ctx.fillText(big, 540, top + 385, 880);
   if (r.big && r.time) {
     ctx.fillStyle = '#4D5A6C';
-    ctx.font = '600 42px Mukta, sans-serif';
-    ctx.fillText(`⏱ ${r.time}`, 540, top + 540, 860);
+    ctx.font = '600 46px Mukta, sans-serif';
+    ctx.fillText(`⏱ ${r.time}`, 540, top + 470, 860);
   }
 
   // challenge band
