@@ -13,11 +13,13 @@ import { useAsync } from '@/lib/useAsync';
 import { pick, type Lang } from '@/lib/types';
 import { addDays, dayName, dayTile, istToday, mondayOf } from '@/lib/dates';
 import { newSessionId } from '@/lib/track';
+import { useCommunityLink } from '@/lib/community';
 
 export default function HomePage() {
   const { t, i18n } = useTranslation();
   const lang: Lang = i18n.language === 'en' ? 'en' : 'mr';
   const sessionId = useMemo(() => newSessionId(), []);
+  const community = useCommunityLink();
   const todayIso = istToday();
   const { data: recent, loading } = useAsync(() => getLivePuzzles({ limit: 60 }), []);
   // The daily puzzle is the newest non-quick one; quick puzzles get their own small card.
@@ -164,15 +166,21 @@ export default function HomePage() {
         </ul>
       </section>
 
-      {/* One promo: daily puzzle on WhatsApp */}
+      {/* One promo: the WhatsApp community once it is switched on, otherwise "leave your number" */}
       <section className="max-w-site mx-auto px-4 sm:px-5 mt-8 lg:mt-10">
         <div className="relative overflow-hidden rounded-3xl bg-navy text-white border-[3px] border-ink p-4 sm:p-6 grid gap-3 grid-cols-[auto_1fr] md:grid-cols-[auto_1fr_auto] items-center">
           <Illustration name="cheer" alt={t('img.cheer')} className="w-20 md:w-28" />
           <div>
-            <h2 className="text-xl md:text-heading-sm text-white leading-tight">{t('home.notify.title')}</h2>
-            <p className="mt-1 text-base leading-snug text-white/80 max-w-xl">{t('home.notify.body')}</p>
+            <h2 className="text-xl md:text-heading-sm text-white leading-tight">{community ? t('community.title') : t('home.notify.title')}</h2>
+            <p className="mt-1 text-base leading-snug text-white/80 max-w-xl">{community ? t('community.body') : t('home.notify.body')}</p>
           </div>
-          <Link to="/suchana" className="btn btn-primary col-span-2 md:col-span-1">{t('home.notify.cta')}</Link>
+          {community ? (
+            <a href={community} target="_blank" rel="noopener noreferrer" className="btn btn-whatsapp col-span-2 md:col-span-1">
+              {t('community.cta')}
+            </a>
+          ) : (
+            <Link to="/suchana" className="btn btn-primary col-span-2 md:col-span-1">{t('home.notify.cta')}</Link>
+          )}
         </div>
       </section>
     </div>

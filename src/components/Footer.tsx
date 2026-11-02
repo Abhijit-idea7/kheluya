@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Facebook, Instagram, MessageCircle } from 'lucide-react';
 import { getPublicSettings } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
+import { communityLinkFrom } from '@/lib/community';
 
 const explore = [
   { to: '/kodi', key: 'nav.kodi' },
@@ -72,6 +73,7 @@ function SocialLinks() {
   const links = [
     data.social_links === true && str('link_facebook') ? { href: str('link_facebook'), label: 'Facebook', Icon: Facebook } : null,
     data.social_links === true && str('link_instagram') ? { href: str('link_instagram'), label: 'Instagram', Icon: Instagram } : null,
+    communityLinkFrom(data) ? { href: communityLinkFrom(data), label: t('community.footer'), Icon: MessageCircle } : null,
     data.whatsapp_channel_link === true && str('link_whatsapp_channel')
       ? { href: str('link_whatsapp_channel'), label: t('footer.channel'), Icon: MessageCircle }
       : null,

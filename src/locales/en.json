@@ -299,5 +299,12 @@
       "liked": "You like these",
       "new": "New"
     }
+  },
+  "community": {
+    "title": "Chala Kheluya on WhatsApp",
+    "body": "A new puzzle on your WhatsApp every morning. Only puzzles, nothing else.",
+    "cta": "Join on WhatsApp",
+    "finishTitle": "Want tomorrow's puzzle on WhatsApp?",
+    "footer": "WhatsApp community"
   }
 }

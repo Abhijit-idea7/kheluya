@@ -12,6 +12,7 @@ import { preparePuzzleHtml } from '@/lib/bridge';
 import { newSessionId, readRef, track, trackArrival, type Channel } from '@/lib/track';
 import { shortLink } from '@/lib/share';
 import { makeChallengeCard, type ResultCard } from '@/lib/shareCard';
+import { useCommunityLink } from '@/lib/community';
 import { pick, type Lang, type Puzzle } from '@/lib/types';
 import Illustration from '@/components/Illustration';
 
@@ -33,6 +34,10 @@ export default function KhelPage() {
   const navigate = useNavigate();
   // For the "left early" suggestion on the puzzle page
   const progressRef = useRef({ started: false, completed: false, since: Date.now() });
+  // Read through a ref so a late-arriving setting never re-runs the counting effect
+  const community = useCommunityLink();
+  const communityRef = useRef('');
+  communityRef.current = community;
 
   // Load the puzzle and its file
   useEffect(() => {
@@ -72,11 +77,19 @@ export default function KhelPage() {
 
     // After finishing: suggest one puzzle to play next, shown inside the puzzle's result screen.
     const offerNext = async () => {
+      const href = communityRef.current;
+      const join = href ? { title: t('community.finishTitle'), cta: t('community.cta'), href } : null;
+      let s: ReturnType<typeof suggest>[number] | undefined;
       try {
-        const [s] = suggest(await getLivePuzzles({ limit: 60 }), 'finished', { exclude: [pid], limit: 1 });
-        if (!s) return;
+        [s] = suggest(await getLivePuzzles({ limit: 60 }), 'finished', { exclude: [pid], limit: 1 });
+      } catch {
+        /* no suggestion is fine */
+      }
+      const win = frameRef.current?.contentWindow;
+      if (!win) return;
+      if (s) {
         const p = s.puzzle;
-        frameRef.current?.contentWindow?.postMessage(
+        win.postMessage(
           {
             __ckHost: 1,
             type: 'next',
@@ -88,11 +101,12 @@ export default function KhelPage() {
             more: t('next.more'),
             close: t('time.close'),
             to: `/khel/${p.number}?from=nx`,
+            join,
           },
           '*',
         );
-      } catch {
-        /* no suggestion is fine */
+      } else if (join) {
+        win.postMessage({ __ckHost: 1, type: 'join', join, close: t('time.close') }, '*');
       }
     };
 

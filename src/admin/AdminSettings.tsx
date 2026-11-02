@@ -5,6 +5,7 @@ import { btnPrimary, Card, Field, input } from '@/admin/ui';
 const SWITCHES: { key: string; label: string; when: string }[] = [
   { key: 'show_play_counts', label: 'Show "solved by N people" on puzzle cards', when: 'After a few weeks of real counts' },
   { key: 'social_links', label: 'Show Facebook / Instagram links in the footer', when: 'When the accounts are set up' },
+  { key: 'whatsapp_community', label: 'Show "Join our WhatsApp community" (home page, end of every puzzle, footer)', when: 'When the community invite link is ready' },
   { key: 'whatsapp_channel_link', label: 'Show the WhatsApp Channel link', when: 'When the Channel is public' },
   { key: 'ask_for_next_puzzle', label: 'Ask players to message for the next puzzle', when: 'After studying usage' },
   { key: 'preorders', label: 'Allow book pre-orders', when: 'When Book Vol. 1 is announced' },
@@ -15,6 +16,7 @@ const SWITCHES: { key: string; label: string; when: string }[] = [
 const LINKS: { key: string; label: string; hint: string }[] = [
   { key: 'link_facebook', label: 'Facebook page link', hint: 'https://facebook.com/…' },
   { key: 'link_instagram', label: 'Instagram account link', hint: 'https://instagram.com/…' },
+  { key: 'link_whatsapp_community', label: 'WhatsApp Community invite link', hint: 'https://chat.whatsapp.com/…' },
   { key: 'link_whatsapp_channel', label: 'WhatsApp Channel link', hint: 'https://whatsapp.com/channel/…' },
 ];
 

@@ -60,7 +60,7 @@ export function bridgeScript(shortLink: string, storagePrefix = ''): string {
   function go(to){ try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen(); } catch(e) {}
     post({ type: 'navigate', to: to }); }
   window.addEventListener('message', function(e){
-    var d = e.data; if (e.source !== parent || !d || d.__ckHost !== 1 || d.type !== 'next') return;
+    var d = e.data; if (e.source !== parent || !d || d.__ckHost !== 1 || (d.type !== 'next' && d.type !== 'join')) return;
     if (!document.getElementById('ck-next-css')) {
       var st = document.createElement('style'); st.id = 'ck-next-css';
       st.textContent = '.ck-next{box-sizing:border-box;width:100%;margin:14px 0 4px;padding:14px;background:#FFFAF0;color:#10233F;border:2px solid #10233F;border-radius:18px;box-shadow:0 4px 0 #10233F;font-family:Mukta,"Baloo 2",system-ui,sans-serif;text-align:left}' +
@@ -72,6 +72,9 @@ export function bridgeScript(shortLink: string, storagePrefix = ''): string {
         '.ck-next-go{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:54px;margin-top:12px;border:2px solid #10233F;border-radius:14px;background:#F39200;color:#10233F;box-shadow:0 3px 0 #10233F;font:800 20px Mukta,"Baloo 2",sans-serif;cursor:pointer}' +
         '.ck-next-go:active{transform:translateY(2px);box-shadow:0 1px 0 #10233F}' +
         '.ck-next-more{display:block;margin:8px auto 0;min-height:40px;background:none;border:0;color:#10233F;font:700 16px Mukta,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}' +
+        '.ck-join{margin-top:12px;padding-top:12px;border-top:2px dashed #D9D0BB}.ck-join.only{margin-top:6px;padding-top:0;border-top:0}' +
+        '.ck-join-t{font-weight:700;font-size:17px;line-height:1.3;margin:0 0 8px}' +
+        '.ck-join-go{display:flex;align-items:center;justify-content:center;gap:8px;min-height:50px;border:2px solid #10233F;border-radius:14px;background:#1DA851;color:#fff;box-shadow:0 3px 0 #10233F;font:800 19px Mukta,"Baloo 2",sans-serif;text-decoration:none}' +
         '.ck-next-x{width:36px;height:36px;border-radius:10px;border:2px solid #10233F;background:#fff;color:#10233F;font-weight:800;cursor:pointer}';
       document.head.appendChild(st);
     }
@@ -87,7 +90,15 @@ export function bridgeScript(shortLink: string, storagePrefix = ''): string {
     b.onclick = function(){ go(String(d.to)); };
     var m = document.createElement('button'); m.type = 'button'; m.className = 'ck-next-more'; m.textContent = String(d.more || '');
     m.onclick = function(){ go('/kodi'); };
-    box.appendChild(k); box.appendChild(r); box.appendChild(b); box.appendChild(m);
+    if (d.type === 'join') { kt.textContent = String((d.join && d.join.title) || ''); box.appendChild(k); }
+    else { box.appendChild(k); box.appendChild(r); box.appendChild(b); box.appendChild(m); }
+    // "Join our WhatsApp community" — under the next-puzzle card, or on its own
+    if (d.join && String(d.join.href).indexOf('https://chat.whatsapp.com/') === 0) {
+      var j = document.createElement('div'); j.className = 'ck-join' + (d.type === 'join' ? ' only' : '');
+      if (d.type !== 'join') { var jt = document.createElement('div'); jt.className = 'ck-join-t'; jt.textContent = String(d.join.title || ''); j.appendChild(jt); }
+      var ja = document.createElement('a'); ja.className = 'ck-join-go'; ja.href = String(d.join.href); ja.target = '_blank'; ja.rel = 'noopener';
+      ja.textContent = String(d.join.cta || ''); j.appendChild(ja); box.appendChild(j);
+    }
     var anchor = document.getElementById('dNote') || document.getElementById('dShareBox');
     if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(box, anchor.nextSibling);
     else {
@@ -128,7 +139,8 @@ export function bridgeScript(shortLink: string, storagePrefix = ''): string {
     var el = e.target && e.target.closest ? e.target.closest('a,button,[role=button]') : null; if (!el) return;
     var h = el.tagName === 'A' ? (el.getAttribute('href') || '') : '';
     var external = /^(https?:|whatsapp:|intent:|fb:|instagram:)/i.test(h);
-    var c = chan(h) || chan(el.textContent) || chan(el.getAttribute('aria-label')) || chan(el.id) || chan(el.className);
+    var c = /ck-join-go/.test(String(el.className)) ? null : // joining the community is not a share
+      (chan(h) || chan(el.textContent) || chan(el.getAttribute('aria-label')) || chan(el.id) || chan(el.className));
     if (external && !e.defaultPrevented) { e.preventDefault(); wo.call(window, el.href, '_blank', 'noopener'); }
     if (c) autoShare(c);
   });
