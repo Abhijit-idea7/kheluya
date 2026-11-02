@@ -39,7 +39,12 @@ export default function KhelPage() {
   const communityRef = useRef('');
   // The WhatsApp challenge picture, made once the player has a result (this visit or an earlier one)
   const cardRef = useRef<{ blob: Blob; text: string } | null>(null);
-  const [siteNote, setSiteNote] = useState('');
+  const [siteNote, setSiteNoteState] = useState('');
+  // ?ckdebug=1 keeps a short log that survives the page reloading after a trip to WhatsApp
+  const setSiteNote = (t: string) => {
+    setSiteNoteState(t);
+    logDiag(t);
+  };
   communityRef.current = community;
 
   // Load the puzzle and its file
@@ -142,6 +147,10 @@ export default function KhelPage() {
       if (e.source !== frameRef.current?.contentWindow) return;
       const m = e.data as { __ck?: number; type?: string; channel?: string; time_ms?: number; mistakes?: number; hints?: number };
       if (!m || m.__ck !== 1) return;
+      if (m.type === 'diag') {
+        logDiag(`frame: ${String((m as { s?: string }).s ?? '')}`);
+        return;
+      }
       if (m.type === 'navigate') {
         const to = String((m as { to?: string }).to ?? '');
         if (/^\/khel\/\d+(\?from=(nx|lv|fy|qk))?$/.test(to) || to === '/kodi') navigate(to);
@@ -301,6 +310,16 @@ export default function KhelPage() {
   );
 }
 
+function logDiag(t: string) {
+  try {
+    const log = JSON.parse(localStorage.getItem('ck-diag-log') || '[]') as string[];
+    const now = new Date().toTimeString().slice(0, 8);
+    localStorage.setItem('ck-diag-log', JSON.stringify([...log, `${now} ${t}`].slice(-8)));
+  } catch {
+    /* ignore */
+  }
+}
+
 /** ?ckdebug=1 — a small box showing each step of the WhatsApp picture share (for checking on a phone). */
 function ShareDiag({ frameRef, siteNote }: { frameRef: React.RefObject<HTMLIFrameElement | null>; siteNote: string }) {
   const [txt, setTxt] = useState('');
@@ -309,9 +328,11 @@ function ShareDiag({ frameRef, siteNote }: { frameRef: React.RefObject<HTMLIFram
       let d: unknown = null;
       try { d = (frameRef.current?.contentWindow as unknown as { __ckDiag?: unknown })?.__ckDiag ?? null; } catch { d = 'no access'; }
       const share = typeof navigator !== 'undefined' && 'share' in navigator;
-      setTxt(`${JSON.stringify(d)} | site share:${share} ${siteNote} | ${navigator.userAgent.slice(0, 60)}`);
+      let log: string[] = [];
+      try { log = JSON.parse(localStorage.getItem('ck-diag-log') || '[]') as string[]; } catch { log = []; }
+      setTxt(`${JSON.stringify(d)} | site share:${share} ${siteNote}\nLOG: ${log.slice(-5).join(' ▸ ')}`);
     }, 1000);
     return () => clearInterval(id);
   }, [frameRef, siteNote]);
-  return <div className="shrink-0 bg-black text-white text-xs p-2 break-all">{txt || 'checking…'}</div>;
+  return <div className="shrink-0 bg-black text-white text-xs p-2 break-all whitespace-pre-line">{txt || 'checking…'}</div>;
 }

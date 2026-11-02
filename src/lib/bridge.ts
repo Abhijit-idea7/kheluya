@@ -146,6 +146,10 @@ export function bridgeScript(shortLink: string, storagePrefix = ''): string {
   });
   // WhatsApp button at the end: share the result picture (made by the site) with the message.
   var cardFile = null, cardText = '', getText = null, hostCanShare = false;
+  function note(t){ diag.last = t;
+    // written straight into the site page's storage, so it survives the page reloading after WhatsApp
+    try { var L = parent.localStorage, log = JSON.parse(L.getItem('ck-diag-log') || '[]');
+      log.push(new Date().toTimeString().slice(0, 8) + ' frame: ' + t); L.setItem('ck-diag-log', JSON.stringify(log.slice(-8))); } catch(e) {} }
   var diag = window.__ckDiag = { host: null, hooked: false, mountSeen: false, cardAsked: false, cardReady: false, coarse: null, canShare: null, last: '' };
   function hookShare(){ try { if (typeof SHARE === 'undefined' || !SHARE || SHARE.__ck) return;
       var mk = SHARE.makeCard, mt = SHARE.mount;
@@ -167,24 +171,25 @@ export function bridgeScript(shortLink: string, storagePrefix = ''): string {
     return t.indexOf(l) >= 0 ? t.split(l).join(tg) : t + '\\n' + tg; }
   document.addEventListener('click', function(e){
     var el = e.target && e.target.closest ? e.target.closest('.cks.wa') : null; if (!el) return;
+    note('tap seen: card ' + (cardFile ? 'ready' : 'missing') + ', site can share ' + hostCanShare);
     var coarse = false; try { coarse = matchMedia('(pointer: coarse)').matches; } catch(x) {}
     diag.coarse = coarse;
-    if (!coarse) { diag.last = 'tap: computer, plain link'; return; } // computers keep the plain WhatsApp link
+    if (!coarse) { note('tap: computer, plain link'); return; } // computers keep the plain WhatsApp link
     var text = waText();
     var here = false;
     try { here = !!cardFile && !!navigator.canShare && navigator.canShare({ files: [cardFile] }); } catch(x) {}
     diag.canShare = here;
-    if (!here && !hostCanShare) { diag.last = 'tap: plain link (no picture sharing)'; return; }
+    if (!here && !hostCanShare) { note('tap: plain link (no picture sharing)'); return; }
     e.preventDefault(); e.stopImmediatePropagation();
     window.CK.shared('whatsapp');
     // Ask the site page to share (it makes the picture itself if the puzzle did not)
-    function viaSite(why){ diag.last = 'tap: site shares (' + why + ')'; post({ type: 'waShare', text: text }); }
+    function viaSite(why){ note('tap: site shares (' + why + ')'); post({ type: 'waShare', text: text }); }
     if (!here) { viaSite('frame cannot'); return; }
-    diag.last = 'tap: sharing picture';
-    navigator.share({ files: [cardFile], text: text }).catch(function(err){
-      if (err && err.name === 'AbortError') { diag.last = 'share closed'; return; }
+    note('tap: sharing picture');
+    navigator.share({ files: [cardFile], text: text }).then(function(){ note('frame: shared picture'); }).catch(function(err){
+      if (err && err.name === 'AbortError') { note('share closed'); return; }
       if (hostCanShare) { viaSite('frame failed: ' + (err && err.name)); return; }
-      diag.last = 'share failed: ' + (err && err.name);
+      note('share failed: ' + (err && err.name));
       try { wo.call(window, 'https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener'); } catch(x) {}
     });
   }, true);
