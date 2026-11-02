@@ -5,8 +5,8 @@ import { ArrowLeft } from 'lucide-react';
 import { getLivePuzzles, getPuzzleByNumber, getTimeStats } from '@/lib/api';
 import { markDone } from '@/lib/progress';
 import { suggest } from '@/lib/suggest';
-import { saveMyTime } from '@/lib/myTimes';
-import { formatDuration } from '@/lib/dates';
+import { myTime, saveMyTime } from '@/lib/myTimes';
+import { formatDuration, mrDigits } from '@/lib/dates';
 import { publicFileUrl } from '@/lib/supabase';
 import { preparePuzzleHtml } from '@/lib/bridge';
 import { newSessionId, readRef, track, trackArrival, type Channel } from '@/lib/track';
@@ -37,6 +37,9 @@ export default function KhelPage() {
   // Read through a ref so a late-arriving setting never re-runs the counting effect
   const community = useCommunityLink();
   const communityRef = useRef('');
+  // The WhatsApp challenge picture, made once the player has a result (this visit or an earlier one)
+  const cardRef = useRef<{ blob: Blob; text: string } | null>(null);
+  const [siteNote, setSiteNote] = useState('');
   communityRef.current = community;
 
   // Load the puzzle and its file
@@ -74,6 +77,29 @@ export default function KhelPage() {
     trackArrival(pid, sessionId, ref);
     const from = new URLSearchParams(search).get('from');
     if (from && /^(nx|lv|fy|qk)$/.test(from)) track({ puzzle_id: pid, session_id: sessionId, event: 'suggested', ref: from });
+
+    // WhatsApp challenge picture: from the puzzle's result card, or from the time saved when the player finished
+    const nm = pick(puzzle, 'name', 'mr');
+    const link = shortLink(puzzle.number);
+    const challengeText = (r: ResultCard) =>
+      `🧩 मी आजचे *${nm}* सोडवले! ${r.big || (r.time ? `⏱ ${r.time}` : '')}\nतुम्ही किती वेळात सोडवाल? खेळून पाहा 👇\n${link}`;
+    const clock = (ms: number) => {
+      const sec = Math.round(ms / 1000);
+      return mrDigits(`${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`);
+    };
+    const savedCard = (): ResultCard => {
+      const ms = myTime(pid);
+      return { title: '', time: ms != null ? clock(ms) : '', big: '', line: '' };
+    };
+    const prepareCard = (r: ResultCard) =>
+      makeChallengeCard(puzzle, r)
+        .then((blob) => {
+          const text = challengeText(r);
+          cardRef.current = { blob, text };
+          frameRef.current?.contentWindow?.postMessage({ __ckHost: 1, type: 'card', blob, text }, '*');
+        })
+        .catch(() => {});
+    if (myTime(pid) != null) prepareCard(savedCard());
 
     // After finishing: suggest one puzzle to play next, shown inside the puzzle's result screen.
     const offerNext = async () => {
@@ -154,12 +180,24 @@ export default function KhelPage() {
       } else if (m.type === 'card') {
         // The puzzle drew its result card: make the WhatsApp challenge picture and hand it back.
         const o = (m as { o?: Partial<ResultCard> }).o ?? {};
-        const r: ResultCard = { title: String(o.title ?? ''), time: String(o.time ?? ''), big: String(o.big ?? ''), line: String(o.line ?? '') };
-        const nm = pick(puzzle, 'name', 'mr');
-        const text = `🧩 मी आजचे *${nm}* सोडवले! ${r.big || (r.time ? `⏱ ${r.time}` : '')}\nतुम्ही किती वेळात सोडवाल? खेळून पाहा 👇\n${shortLink(puzzle.number)}`;
-        makeChallengeCard(puzzle, r)
-          .then((blob) => frameRef.current?.contentWindow?.postMessage({ __ckHost: 1, type: 'card', blob, text }, '*'))
-          .catch(() => {});
+        prepareCard({ title: String(o.title ?? ''), time: String(o.time ?? ''), big: String(o.big ?? ''), line: String(o.line ?? '') });
+      } else if (m.type === 'waShare') {
+        // The puzzle could not share the picture itself: share it from the site page.
+        const given = String((m as { text?: string }).text ?? '');
+        const text = given.replace(/https?:\/\/\S+/g, '').trim()
+          ? given
+          : (cardRef.current?.text ?? challengeText(savedCard())).split(link).join(`${link}?s=wa`);
+        (async () => {
+          try {
+            const blob = cardRef.current?.blob ?? (await makeChallengeCard(puzzle, savedCard()));
+            await navigator.share({ files: [new File([blob], 'chala-kheluya.png', { type: 'image/png' })], text });
+            setSiteNote('site: shared picture');
+          } catch (err) {
+            const why = (err as Error)?.name ?? 'error';
+            setSiteNote(`site share failed: ${why}`);
+            if (why !== 'AbortError') window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+          }
+        })();
       } else if (m.type === 'shared') {
         const ch = (CHANNELS as string[]).includes(m.channel ?? '') ? (m.channel as Channel) : 'other';
         track({ puzzle_id: pid, session_id: sessionId, event: 'shared', channel: ch, source: 'puzzle' });
@@ -221,7 +259,7 @@ export default function KhelPage() {
         <img src="/brand/logo-mark.webp" alt="" aria-hidden="true" width={250} height={80} className="ml-auto h-10 w-auto hidden sm:block" />
       </div>
 
-      {debug && <ShareDiag frameRef={frameRef} />}
+      {debug && <ShareDiag frameRef={frameRef} siteNote={siteNote} />}
       {phase === 'ready' ? (
         <iframe
           ref={frameRef}
@@ -231,6 +269,18 @@ export default function KhelPage() {
           sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads allow-forms"
           allow="fullscreen; autoplay; clipboard-write; web-share"
           allowFullScreen
+          onLoad={() => {
+            const win = frameRef.current?.contentWindow;
+            if (!win) return;
+            let ok = false;
+            try {
+              ok = !!navigator.canShare?.({ files: [new File([new Blob(['x'], { type: 'image/png' })], 'x.png', { type: 'image/png' })] });
+            } catch {
+              ok = false;
+            }
+            win.postMessage({ __ckHost: 1, type: 'hostShare', ok }, '*');
+            if (cardRef.current) win.postMessage({ __ckHost: 1, type: 'card', ...cardRef.current }, '*');
+          }}
         />
       ) : (
         <div className="flex-1 overflow-auto grid place-items-center p-6 text-center">
@@ -252,16 +302,16 @@ export default function KhelPage() {
 }
 
 /** ?ckdebug=1 — a small box showing each step of the WhatsApp picture share (for checking on a phone). */
-function ShareDiag({ frameRef }: { frameRef: React.RefObject<HTMLIFrameElement | null> }) {
+function ShareDiag({ frameRef, siteNote }: { frameRef: React.RefObject<HTMLIFrameElement | null>; siteNote: string }) {
   const [txt, setTxt] = useState('');
   useEffect(() => {
     const id = setInterval(() => {
       let d: unknown = null;
       try { d = (frameRef.current?.contentWindow as unknown as { __ckDiag?: unknown })?.__ckDiag ?? null; } catch { d = 'no access'; }
       const share = typeof navigator !== 'undefined' && 'share' in navigator;
-      setTxt(`${JSON.stringify(d)} | site share:${share} | ${navigator.userAgent.slice(0, 80)}`);
+      setTxt(`${JSON.stringify(d)} | site share:${share} ${siteNote} | ${navigator.userAgent.slice(0, 60)}`);
     }, 1000);
     return () => clearInterval(id);
-  }, [frameRef]);
+  }, [frameRef, siteNote]);
   return <div className="shrink-0 bg-black text-white text-xs p-2 break-all">{txt || 'checking…'}</div>;
 }

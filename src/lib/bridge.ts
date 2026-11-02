@@ -145,8 +145,8 @@ export function bridgeScript(shortLink: string, storagePrefix = ''): string {
     if (c) autoShare(c);
   });
   // WhatsApp button at the end: share the result picture (made by the site) with the message.
-  var cardFile = null, cardText = '', getText = null;
-  var diag = window.__ckDiag = { hooked: false, mountSeen: false, cardAsked: false, cardReady: false, coarse: null, canShare: null, last: '' };
+  var cardFile = null, cardText = '', getText = null, hostCanShare = false;
+  var diag = window.__ckDiag = { host: null, hooked: false, mountSeen: false, cardAsked: false, cardReady: false, coarse: null, canShare: null, last: '' };
   function hookShare(){ try { if (typeof SHARE === 'undefined' || !SHARE || SHARE.__ck) return;
       var mk = SHARE.makeCard, mt = SHARE.mount;
       if (typeof mk === 'function') SHARE.makeCard = function(o){ o = o || {};
@@ -158,25 +158,33 @@ export function bridgeScript(shortLink: string, storagePrefix = ''): string {
   document.addEventListener('DOMContentLoaded', hookShare);
   window.addEventListener('load', hookShare);
   window.addEventListener('message', function(e){
-    var d = e.data; if (e.source !== parent || !d || d.__ckHost !== 1 || d.type !== 'card') return;
+    var d = e.data; if (e.source !== parent || !d || d.__ckHost !== 1) return;
+    if (d.type === 'hostShare') { hostCanShare = !!d.ok; diag.host = hostCanShare; return; }
+    if (d.type !== 'card') return;
     try { cardFile = new File([d.blob], 'chala-kheluya.png', { type: 'image/png' }); cardText = String(d.text || ''); diag.cardReady = true; } catch(err) { cardFile = null; diag.last = 'file error: ' + err; } });
   function waText(){ var t = ''; try { if (getText) t = String(getText() || ''); } catch(e) {} if (!t) t = cardText;
     var l = window.CK.link, tg = l + (l.indexOf('?') >= 0 ? '&' : '?') + 's=wa';
     return t.indexOf(l) >= 0 ? t.split(l).join(tg) : t + '\\n' + tg; }
   document.addEventListener('click', function(e){
     var el = e.target && e.target.closest ? e.target.closest('.cks.wa') : null; if (!el) return;
-    if (!cardFile) { diag.last = 'tap: no picture yet'; return; }
-    var ok = false;
-    try { diag.coarse = matchMedia('(pointer: coarse)').matches; diag.canShare = !!navigator.canShare && navigator.canShare({ files: [cardFile] });
-      ok = diag.coarse && diag.canShare; } catch(x) { diag.last = 'check error: ' + x; }
-    if (!ok) { diag.last = 'tap: plain link (phone cannot share pictures here)'; return; } // computers and older phones keep the plain WhatsApp link
-    diag.last = 'tap: sharing picture';
-    e.preventDefault(); e.stopImmediatePropagation();
+    var coarse = false; try { coarse = matchMedia('(pointer: coarse)').matches; } catch(x) {}
+    diag.coarse = coarse;
+    if (!coarse) { diag.last = 'tap: computer, plain link'; return; } // computers keep the plain WhatsApp link
     var text = waText();
+    var here = false;
+    try { here = !!cardFile && !!navigator.canShare && navigator.canShare({ files: [cardFile] }); } catch(x) {}
+    diag.canShare = here;
+    if (!here && !hostCanShare) { diag.last = 'tap: plain link (no picture sharing)'; return; }
+    e.preventDefault(); e.stopImmediatePropagation();
     window.CK.shared('whatsapp');
+    // Ask the site page to share (it makes the picture itself if the puzzle did not)
+    function viaSite(why){ diag.last = 'tap: site shares (' + why + ')'; post({ type: 'waShare', text: text }); }
+    if (!here) { viaSite('frame cannot'); return; }
+    diag.last = 'tap: sharing picture';
     navigator.share({ files: [cardFile], text: text }).catch(function(err){
-      diag.last = 'share failed: ' + (err && err.name) + ' ' + (err && err.message);
-      if (err && err.name === 'AbortError') return;
+      if (err && err.name === 'AbortError') { diag.last = 'share closed'; return; }
+      if (hostCanShare) { viaSite('frame failed: ' + (err && err.name)); return; }
+      diag.last = 'share failed: ' + (err && err.name);
       try { wo.call(window, 'https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener'); } catch(x) {}
     });
   }, true);
