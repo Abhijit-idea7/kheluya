@@ -11,6 +11,7 @@ import { publicFileUrl } from '@/lib/supabase';
 import { preparePuzzleHtml } from '@/lib/bridge';
 import { newSessionId, readRef, track, trackArrival, type Channel } from '@/lib/track';
 import { shortLink } from '@/lib/share';
+import { makeChallengeCard, type ResultCard } from '@/lib/shareCard';
 import { pick, type Lang, type Puzzle } from '@/lib/types';
 import Illustration from '@/components/Illustration';
 
@@ -136,6 +137,15 @@ export default function KhelPage() {
             );
           });
         }
+      } else if (m.type === 'card') {
+        // The puzzle drew its result card: make the WhatsApp challenge picture and hand it back.
+        const o = (m as { o?: Partial<ResultCard> }).o ?? {};
+        const r: ResultCard = { title: String(o.title ?? ''), time: String(o.time ?? ''), big: String(o.big ?? ''), line: String(o.line ?? '') };
+        const nm = pick(puzzle, 'name', 'mr');
+        const text = `🧩 मी आजचे *${nm}* सोडवले! ${r.big || (r.time ? `⏱ ${r.time}` : '')}\nतुम्ही किती वेळात सोडवाल? खेळून पाहा 👇\n${shortLink(puzzle.number)}`;
+        makeChallengeCard(puzzle, r)
+          .then((blob) => frameRef.current?.contentWindow?.postMessage({ __ckHost: 1, type: 'card', blob, text }, '*'))
+          .catch(() => {});
       } else if (m.type === 'shared') {
         const ch = (CHANNELS as string[]).includes(m.channel ?? '') ? (m.channel as Channel) : 'other';
         track({ puzzle_id: pid, session_id: sessionId, event: 'shared', channel: ch, source: 'puzzle' });

@@ -132,6 +132,36 @@ export function bridgeScript(shortLink: string, storagePrefix = ''): string {
     if (external && !e.defaultPrevented) { e.preventDefault(); wo.call(window, el.href, '_blank', 'noopener'); }
     if (c) autoShare(c);
   });
+  // WhatsApp button at the end: share the result picture (made by the site) with the message.
+  var cardFile = null, cardText = '', getText = null;
+  function hookShare(){ try { if (typeof SHARE === 'undefined' || !SHARE || SHARE.__ck) return;
+      var mk = SHARE.makeCard, mt = SHARE.mount;
+      if (typeof mk === 'function') SHARE.makeCard = function(o){ o = o || {};
+        try { post({ type: 'card', o: { title: String(o.title || ''), time: String(o.time || ''), big: String(o.big || ''), line: String(o.line || '') } }); } catch(e) {}
+        return mk.apply(this, arguments); };
+      if (typeof mt === 'function') SHARE.mount = function(box, gt){ if (typeof gt === 'function') getText = gt; return mt.apply(this, arguments); };
+      SHARE.__ck = 1; } catch(e) {} }
+  document.addEventListener('DOMContentLoaded', hookShare);
+  window.addEventListener('load', hookShare);
+  window.addEventListener('message', function(e){
+    var d = e.data; if (e.source !== parent || !d || d.__ckHost !== 1 || d.type !== 'card') return;
+    try { cardFile = new File([d.blob], 'chala-kheluya.png', { type: 'image/png' }); cardText = String(d.text || ''); } catch(err) { cardFile = null; } });
+  function waText(){ var t = ''; try { if (getText) t = String(getText() || ''); } catch(e) {} if (!t) t = cardText;
+    var l = window.CK.link, tg = l + (l.indexOf('?') >= 0 ? '&' : '?') + 's=wa';
+    return t.indexOf(l) >= 0 ? t.split(l).join(tg) : t + '\\n' + tg; }
+  document.addEventListener('click', function(e){
+    var el = e.target && e.target.closest ? e.target.closest('.cks.wa') : null; if (!el || !cardFile) return;
+    var ok = false;
+    try { ok = matchMedia('(pointer: coarse)').matches && !!navigator.canShare && navigator.canShare({ files: [cardFile] }); } catch(x) {}
+    if (!ok) return; // computers and older phones keep the plain WhatsApp link
+    e.preventDefault(); e.stopImmediatePropagation();
+    var text = waText();
+    window.CK.shared('whatsapp');
+    navigator.share({ files: [cardFile], text: text }).catch(function(err){
+      if (err && err.name === 'AbortError') return;
+      try { wo.call(window, 'https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener'); } catch(x) {}
+    });
+  }, true);
   try { if (navigator.share) { var ns = navigator.share.bind(navigator);
     navigator.share = function(d){ later('native'); return ns(d); }; } } catch(e) {}
   try { if (navigator.clipboard && navigator.clipboard.writeText) { var cw = navigator.clipboard.writeText.bind(navigator.clipboard);
