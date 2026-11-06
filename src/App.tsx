@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
 import Layout from '@/layout/Layout';
 import HomePage from '@/pages/HomePage';
 import KodiPage from '@/pages/KodiPage';
+import MajhaKhelPage from '@/pages/MajhaKhelPage';
 import PrakarPage from '@/pages/PrakarPage';
 import KodiEkPage from '@/pages/KodiEkPage';
 import KhelPage from '@/pages/KhelPage';
@@ -44,6 +45,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/kodi" element={<KodiPage />} />
+          <Route path="/majha-khel" element={<MajhaKhelPage />} />
           <Route path="/prakar/:type" element={<PrakarPage />} />
           <Route path="/k/:n" element={<KodiEkPage />} />
           <Route path="/madat" element={<MadatPage />} />

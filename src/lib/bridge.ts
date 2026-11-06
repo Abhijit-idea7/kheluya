@@ -72,6 +72,8 @@ export function bridgeScript(shortLink: string, storagePrefix = ''): string {
         '.ck-next-go{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:54px;margin-top:12px;border:2px solid #10233F;border-radius:14px;background:#F39200;color:#10233F;box-shadow:0 3px 0 #10233F;font:800 20px Mukta,"Baloo 2",sans-serif;cursor:pointer}' +
         '.ck-next-go:active{transform:translateY(2px);box-shadow:0 1px 0 #10233F}' +
         '.ck-next-more{display:block;margin:8px auto 0;min-height:40px;background:none;border:0;color:#10233F;font:700 16px Mukta,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}' +
+        '.ck-next-cdt{font-weight:700;font-size:19px;line-height:1.3;margin:12px 0 6px}.ck-next-bar{height:10px;border-radius:5px;background:#EFE8D8;overflow:hidden}.ck-next-bar>div{height:100%;background:#F39200;border-radius:5px;transition:width 1s linear}' +
+        '.ck-next-stay{display:flex;align-items:center;justify-content:center;width:100%;min-height:50px;margin-top:10px;border:2px solid #10233F;border-radius:14px;background:#FFFAF0;color:#10233F;font:700 18px Mukta,"Baloo 2",sans-serif;cursor:pointer}' +
         '.ck-join{margin-top:12px;padding-top:12px;border-top:2px dashed #D9D0BB}.ck-join.only{margin-top:6px;padding-top:0;border-top:0}' +
         '.ck-join-t{font-weight:700;font-size:17px;line-height:1.3;margin:0 0 8px}' +
         '.ck-join-go{display:flex;align-items:center;justify-content:center;gap:8px;min-height:50px;border:2px solid #10233F;border-radius:14px;background:#1DA851;color:#fff;box-shadow:0 3px 0 #10233F;font:800 19px Mukta,"Baloo 2",sans-serif;text-decoration:none}' +
@@ -106,6 +108,35 @@ export function bridgeScript(shortLink: string, storagePrefix = ''): string {
       var x = document.createElement('button'); x.type = 'button'; x.className = 'ck-next-x'; x.textContent = '\u2715'; x.setAttribute('aria-label', String(d.close || 'Close'));
       x.onclick = function(){ box.remove(); }; k.appendChild(x);
       (document.body || document.documentElement).appendChild(box);
+    }
+    // Fresh finish: the next puzzle starts by itself after a short countdown — only while the card
+    // is on screen and the page is visible; "थांबा" or tapping any other button stops it.
+    if (d.type === 'next' && d.auto > 0) {
+      var total = Math.round(d.auto), left = total, iv = null, stopped = false;
+      var cd = document.createElement('div');
+      var cdt = document.createElement('div'); cdt.className = 'ck-next-cdt';
+      var cbar = document.createElement('div'); cbar.className = 'ck-next-bar'; var cfill = document.createElement('div'); cbar.appendChild(cfill);
+      cd.appendChild(cdt); cd.appendChild(cbar);
+      box.insertBefore(cd, b);
+      var stay = document.createElement('button'); stay.type = 'button'; stay.className = 'ck-next-stay'; stay.textContent = String(d.stay || '');
+      box.insertBefore(stay, m);
+      m.style.display = 'none';
+      var digits = String(d.digits || ''); var numTxt = function(v){ return digits.length === 10 ? String(v).replace(/[0-9]/g, function(c){ return digits.charAt(+c); }) : String(v); };
+      var drawCd = function(){ cdt.textContent = String(d.autoText || '').replace('{s}', numTxt(left)); cfill.style.width = (left / total * 100) + '%'; };
+      var stopCd = function(){ stopped = true; if (iv) clearInterval(iv); iv = null; cd.remove(); stay.remove(); m.style.display = ''; };
+      var tickCd = function(){ if (stopped || document.hidden) return; left--; drawCd(); if (left <= 0) { stopCd(); go(String(d.to)); } };
+      var runCd = function(){ if (!iv && !stopped) iv = setInterval(tickCd, 1000); };
+      var pauseCd = function(){ if (iv) { clearInterval(iv); iv = null; } };
+      drawCd();
+      stay.onclick = stopCd;
+      try {
+        var io = new IntersectionObserver(function(es){ es.forEach(function(en){ if (en.intersectionRatio >= 0.5) runCd(); else pauseCd(); }); }, { threshold: [0, 0.5, 1] });
+        io.observe(box);
+      } catch(e) { runCd(); }
+      document.addEventListener('click', function(ev){
+        var el = ev.target && ev.target.closest ? ev.target.closest('a,button,[role=button]') : null;
+        if (el && !box.contains(el)) stopCd();
+      }, true);
     }
   });
   // Messages from the site, shown inside the puzzle so they are visible in full screen too.

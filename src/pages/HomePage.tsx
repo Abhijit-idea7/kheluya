@@ -1,188 +1,194 @@
-import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Check, Clock, Play } from 'lucide-react';
+import { Check, Clock, Play, Star } from 'lucide-react';
 import Tile from '@/components/Tile';
 import Illustration from '@/components/Illustration';
-import { ShareToggle } from '@/components/ShareButtons';
-import { ForYouRow, NextCard } from '@/components/SuggestCards';
-import { doneIds, startedNumbers } from '@/lib/progress';
-import { isQuick, suggest } from '@/lib/suggest';
 import { getLivePuzzles } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
-import { pick, type Lang } from '@/lib/types';
-import { addDays, dayName, dayTile, istToday, mondayOf } from '@/lib/dates';
-import { newSessionId } from '@/lib/track';
+import { pick, type Lang, type Puzzle } from '@/lib/types';
+import { todayPlan } from '@/lib/next';
+import { myStats } from '@/lib/myStats';
 import { useCommunityLink } from '@/lib/community';
+import { mrDigits } from '@/lib/dates';
 
+const WA = (
+  <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.7-1.2 2.2 2.2 0 0 0 .2-1.2c0-.1-.3-.2-.5-.3Z" /></svg>
+);
+
+/** Home: one question, one big button. The site decides what to play next. */
 export default function HomePage() {
   const { t, i18n } = useTranslation();
   const lang: Lang = i18n.language === 'en' ? 'en' : 'mr';
-  const sessionId = useMemo(() => newSessionId(), []);
+  const num = (v: number | string) => (lang === 'mr' ? mrDigits(v) : String(v));
   const community = useCommunityLink();
-  const todayIso = istToday();
-  const { data: recent, loading } = useAsync(() => getLivePuzzles({ limit: 60 }), []);
-  // The daily puzzle is the newest non-quick one; quick puzzles get their own small card.
-  const main = (recent ?? []).filter((p) => !isQuick(p));
-  const today = main[0] ?? null;
-  const quickList = (recent ?? []).filter(isQuick);
-  const done = doneIds();
-  const started = startedNumbers();
-  const quick = quickList.find((p) => !done.has(p.id)) ?? quickList[0] ?? null;
-  const sugg = recent ? suggest(recent, 'home', { exclude: [today?.id ?? '', quick?.id ?? ''], limit: 4 }) : [];
-  // A puzzle left half-way goes to the very top; the rest fill "तुमच्यासाठी".
-  const resume = sugg.find((s) => s.reason === 'resume') ?? null;
-  const forYou = sugg.filter((s) => s !== resume).slice(0, 3);
-  const isTodayFresh = today?.live_date === todayIso;
-  const todayHalfway = !!today && started.has(today.number) && !done.has(today.id);
-  const mon = mondayOf(todayIso);
-  const week = Array.from({ length: 7 }, (_, i) => {
-    const date = addDays(mon, i);
-    return { date, puzzle: main.find((p) => p.live_date === date) ?? null };
-  });
+  const { data: puzzles, loading } = useAsync(() => getLivePuzzles({ limit: 400 }), []);
+
+  const hour = Number(new Date(Date.now() + 330 * 60000).toISOString().slice(11, 13));
+  const greet = hour < 12 ? t('home2.greetMorning') : hour < 17 ? t('home2.greetDay') : t('home2.greetEvening');
+
+  if (loading || !puzzles) {
+    return (
+      <div className="max-w-xl mx-auto px-4 pt-6">
+        <div className="sticker h-80 animate-pulse" aria-hidden="true" />
+      </div>
+    );
+  }
+
+  const plan = todayPlan(puzzles);
+  const stats = myStats(puzzles);
+  if (!plan.next && !plan.main) {
+    return <p className="max-w-xl mx-auto px-4 py-10 text-xl">{t('home2.none')}</p>;
+  }
+
+  const hasQuick = !!plan.quick;
+  const meta = (p: Puzzle) => [pick(p, 'time', lang), t(`difficulty.${p.difficulty}`)].filter(Boolean).join(' · ');
+
+  // What the screen says, by situation
+  let kicker = greet;
+  let title = plan.mainIsToday ? t('home2.freshTitle') : t('home2.latestTitle');
+  let line = '';
+  let btn = t('home2.play');
+  let half = false;
+  const p = plan.next;
+  if (plan.state === 'resume') {
+    kicker = t('home2.resumeKicker');
+    title = t('home2.resumeTitle');
+    line = t('home2.resumeLine');
+    btn = t('home2.resumeBtn');
+    half = true;
+  } else if (plan.state === 'quick') {
+    kicker = t('home2.quickKicker');
+    title = t('home2.quickTitle');
+    btn = t('home2.quickBtn');
+  }
+
+  const pill = (n: string, label: string, done: boolean) => (
+    <div className={`flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-2xl border-2 ${done ? 'bg-green-soft border-green' : 'bg-paper border-line'}`}>
+      {done ? (
+        <span className="grid place-items-center h-8 w-8 shrink-0 rounded-full bg-green text-white">
+          <Check size={18} strokeWidth={3.2} aria-hidden="true" />
+        </span>
+      ) : (
+        <span className="grid place-items-center h-8 w-8 shrink-0 rounded-full border-[3px] border-[#B9AE95] text-base font-bold text-ink/70">{n}</span>
+      )}
+      <span className="text-lg font-semibold leading-tight">{label}</span>
+    </div>
+  );
+
+  const progress = (
+    <div>
+      <p className="text-base font-semibold text-ink/70 mb-1.5">{t('home2.todayLabel')}</p>
+      <div className="flex gap-2.5">
+        {pill(num(1), t('home2.mainPill'), plan.mainDone)}
+        {hasQuick && pill(num(2), t('home2.quickPill'), plan.quickDone)}
+      </div>
+    </div>
+  );
+
+  const statsLink = (
+    <div className="flex items-center justify-between gap-3">
+      {stats.solved > 0 ? (
+      <Link to="/majha-khel" className="inline-flex items-center gap-2 min-h-[2.75rem] text-lg font-bold underline underline-offset-4">
+        <Star size={20} strokeWidth={2.4} aria-hidden="true" />
+        {stats.streak > 1
+          ? t('home2.statsLine', { n: num(stats.solved), d: num(stats.streak) })
+          : t('home2.statsLineShort', { n: num(stats.solved) })}
+      </Link>
+      ) : (
+        <span />
+      )}
+      <Link to="/kodi" className="min-h-[2.75rem] inline-flex items-center text-lg font-semibold text-ink/70 underline underline-offset-4">
+        {t('home2.all')}
+      </Link>
+    </div>
+  );
+
+  // All done for today: celebrate, invite back tomorrow
+  if (plan.state === 'done') {
+    return (
+      <div className="max-w-xl mx-auto px-4 sm:px-5 pt-5 pb-4 flex flex-col items-center text-center gap-3">
+        <Illustration name="cheer" alt={t('img.cheer')} className="w-44 shadow-sticker-lg" eager />
+        <h1 className="text-heading-lg leading-tight mt-1">{hasQuick ? t('home2.doneTitle') : t('home2.doneTitleOne')}</h1>
+        {stats.streak > 1 && (
+          <p className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-soft border-2 border-ink text-lg font-bold">
+            <Star size={20} strokeWidth={2.4} aria-hidden="true" />
+            {t('home2.streak', { n: num(stats.streak) })}
+          </p>
+        )}
+        <p className="text-xl">{t('home2.tomorrow')}</p>
+        <div className="w-full grid gap-3 mt-2">
+          {community && (
+            <a href={community} target="_blank" rel="noopener noreferrer" className="btn btn-whatsapp w-full !min-h-[4.25rem] !text-[1.4rem]">
+              {WA}
+              {t('home2.remind')}
+            </a>
+          )}
+          {p && (
+            <Link to={`/khel/${p.number}?from=fy`} className="btn btn-quiet w-full">
+              <Play size={20} strokeWidth={2.8} fill="currentColor" aria-hidden="true" />
+              {t('home2.more')}
+            </Link>
+          )}
+        </div>
+        <div className="w-full mt-2">{progress}</div>
+        <div className="w-full">{statsLink}</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="overflow-x-hidden">
-      {/* HERO: today's puzzle comes first; the big logo only on wide screens */}
-      <section className="max-w-site mx-auto px-4 sm:px-5 pt-4 lg:pt-8 grid gap-4 lg:gap-10 lg:grid-cols-[1.05fr_1fr] items-start">
-        <div className="relative hidden lg:grid lg:order-2 place-items-center lg:mt-10">
-          <div className="rays absolute inset-[-12%] pointer-events-none" aria-hidden="true" />
-          <img
-            src="/brand/logo-hero.webp"
-            alt={t('app.logoAlt')}
-            width={450}
-            height={194}
-            className="relative pop-in w-full max-w-[480px] h-auto drop-shadow-[0_6px_0_rgba(16,35,63,0.12)]"
-          />
+    <div className="max-w-site mx-auto px-4 sm:px-5 pt-5 pb-4 lg:pt-10 grid gap-5 lg:gap-10 lg:grid-cols-[1.3fr_1fr] items-start">
+      <section className="max-w-xl w-full mx-auto lg:mx-0 flex flex-col gap-4" aria-labelledby="home-title">
+        <div>
+          <p className="font-heading font-bold text-xl text-orange-deep">{kicker}</p>
+          <h1 id="home-title" className="text-heading-lg lg:text-heading-xl leading-tight">{title}</h1>
         </div>
 
-        <div className="lg:order-1 min-w-0">
-          <h1 className="text-[1.6rem] leading-tight lg:text-heading-xl">{t('home.hero.title')}</h1>
-          <p className="hidden lg:block mt-2 text-xl leading-snug text-ink/80 max-w-xl">{t('home.hero.sub')}</p>
-
-          {resume && (
-            <div className="mt-4">
-              <NextCard suggestion={resume} kicker={t('next.kickerResume')} from="fy" />
-            </div>
-          )}
-
-          {/* Today's puzzle */}
-          {loading ? (
-            <div className="sticker mt-4 p-5 h-56 animate-pulse" aria-hidden="true" />
-          ) : today ? (
-            <article className="sticker relative overflow-hidden mt-4 p-4 sm:p-5" aria-labelledby="today-name">
-              <div className="grid-corner absolute right-0 top-0 w-32 h-32 pointer-events-none" aria-hidden="true" />
-              <div className="relative flex items-center gap-3">
-                <Tile char={today.type?.tile ?? 'क'} size={56} today tilt={-4} className="shrink-0" />
-                <div className="min-w-0">
-                  <p className="font-heading font-bold text-lg text-orange-deep leading-tight">
-                    {isTodayFresh ? t('home.today.label', { day: dayName(todayIso, lang) }) : t('home.today.latest')}
-                  </p>
-                  <h2 id="today-name" className="text-heading-md leading-tight">{pick(today, 'name', lang)}</h2>
-                </div>
+        {p && (
+          <article className="sticker relative overflow-hidden p-5">
+            <div className="grid-corner absolute right-0 top-0 w-32 h-32 pointer-events-none" aria-hidden="true" />
+            <div className="relative flex items-center gap-4">
+              <Tile char={p.type?.tile ?? 'क'} size={72} today={plan.state !== 'quick'} tilt={-3} className="shrink-0" />
+              <div className="min-w-0">
+                <h2 className="text-heading-md leading-tight">{pick(p, 'name', lang)}</h2>
+                <p className="text-lg text-ink/70 inline-flex items-center gap-1.5">
+                  <Clock size={17} strokeWidth={2.4} aria-hidden="true" />
+                  {meta(p)}
+                </p>
               </div>
-              <p className="relative mt-2 text-xl leading-snug">{pick(today, 'about', lang)}</p>
-              <p className="relative mt-2 flex flex-wrap gap-x-5 gap-y-1 text-lg text-ink/75">
-                {pick(today, 'time', lang) && (
-                  <span className="inline-flex items-center gap-2">
-                    <Clock size={18} strokeWidth={2.4} aria-hidden="true" />
-                    {pick(today, 'time', lang)}
-                  </span>
-                )}
-                <span className="inline-flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-orange border-2 border-ink" aria-hidden="true" />
-                  {t(`difficulty.${today.difficulty}`)}
-                </span>
+            </div>
+            <p className="relative mt-3 text-xl leading-snug">{line || pick(p, 'about', lang)}</p>
+            {half && (
+              <p className="relative mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-soft border-2 border-ink text-base font-bold">
+                {t('home2.half')}
               </p>
-              <Link to={`/khel/${today.number}`} className="relative btn btn-primary w-full mt-3 !text-[1.45rem]">
-                <Play size={22} strokeWidth={2.8} fill="currentColor" aria-hidden="true" />
-                {todayHalfway ? t('next.resume') : t('home.today.play')}
-              </Link>
-              <div className="relative">
-                <ShareToggle puzzle={today} sessionId={sessionId} />
-              </div>
-            </article>
-          ) : (
-            <div className="sticker mt-4 p-5">
-              <p className="text-xl">{t('home.today.none')}</p>
-            </div>
-          )}
+            )}
+          </article>
+        )}
 
-          {quick && (
-            <div className="mt-4">
-              <NextCard suggestion={{ puzzle: quick, reason: 'quick' }} kicker={t('quick.kicker')} from="qk" tone="green" />
-            </div>
-          )}
-        </div>
-      </section>
-
-      <ForYouRow items={forYou} />
-
-      {/* THIS WEEK: one strip of seven days */}
-      <section className="max-w-site mx-auto px-4 sm:px-5 mt-8 lg:mt-10" aria-labelledby="week-h">
-        <div className="flex items-baseline gap-3">
-          <h2 id="week-h" className="text-heading-sm">{t('home.week.title')}</h2>
-          <Link to="/kodi" className="ml-auto font-heading font-bold text-lg text-orange-deep underline underline-offset-4 whitespace-nowrap">
-            {t('home.week.all')} →
+        {p && (
+          <Link to={`/khel/${p.number}`} className="btn btn-primary w-full !min-h-[5.25rem] !text-[2rem] !rounded-3xl">
+            <Play size={30} strokeWidth={2.8} fill="currentColor" aria-hidden="true" />
+            {btn}
           </Link>
+        )}
+
+        <div className="lg:hidden flex flex-col gap-3 mt-2">
+          {progress}
+          {statsLink}
         </div>
-        <ul className="mt-3 grid grid-cols-7 gap-1.5 sm:gap-3">
-          {week.map(({ date, puzzle: p }) => {
-            const isToday = date === todayIso;
-            const future = date > todayIso;
-            const played = !!p && done.has(p.id);
-            const label = `${dayName(date, lang)}: ${p ? pick(p, 'name', lang) : future ? t('home.week.soon') : t('home.week.rest')}${played ? ` (${t('home.week.played')})` : ''}`;
-            const inner = (
-              <>
-                <span className="relative">
-                  <Tile char={p?.type?.tile ?? ''} size={40} today={isToday} className={!p || future ? 'opacity-40' : ''} />
-                  {played && (
-                    <span className="absolute -right-1.5 -top-1.5 grid place-items-center h-5 w-5 rounded-full bg-green text-white border-2 border-ink" aria-hidden="true">
-                      <Check size={12} strokeWidth={4} />
-                    </span>
-                  )}
-                </span>
-                <span className={`text-sm leading-tight ${isToday ? 'font-bold' : 'text-ink/70'}`}>
-                  {isToday ? t('home.week.today') : dayTile(date)}
-                </span>
-                {p && <span className="hidden sm:block text-base leading-tight font-bold truncate max-w-full px-1">{pick(p, 'name', lang)}</span>}
-              </>
-            );
-            const cls = `h-full flex flex-col items-center text-center gap-1 rounded-2xl border-2 py-2 ${
-              isToday ? 'bg-orange-soft border-ink shadow-sticker' : p ? 'bg-paper border-ink' : 'bg-transparent border-dashed border-ink/30'
-            }`;
-            return (
-              <li key={date} className="min-w-0">
-                {p ? (
-                  <Link to={`/k/${p.number}`} className={`${cls} transition-transform active:translate-y-0.5`} aria-label={label}>
-                    {inner}
-                  </Link>
-                ) : (
-                  <div className={cls} aria-label={label}>{inner}</div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
       </section>
 
-      {/* One promo: the WhatsApp community once it is switched on, otherwise "leave your number" */}
-      <section className="max-w-site mx-auto px-4 sm:px-5 mt-8 lg:mt-10">
-        <div className="relative overflow-hidden rounded-3xl bg-navy text-white border-[3px] border-ink p-4 sm:p-6 grid gap-3 grid-cols-[auto_1fr] md:grid-cols-[auto_1fr_auto] items-center">
-          <Illustration name="cheer" alt={t('img.cheer')} className="w-20 md:w-28" />
-          <div>
-            <h2 className="text-xl md:text-heading-sm text-white leading-tight">{community ? t('community.title') : t('home.notify.title')}</h2>
-            <p className="mt-1 text-base leading-snug text-white/80 max-w-xl">{community ? t('community.body') : t('home.notify.body')}</p>
-          </div>
-          {community ? (
-            <a href={community} target="_blank" rel="noopener noreferrer" className="btn btn-whatsapp col-span-2 md:col-span-1">
-              {t('community.cta')}
-            </a>
-          ) : (
-            <Link to="/suchana" className="btn btn-primary col-span-2 md:col-span-1">{t('home.notify.cta')}</Link>
-          )}
-        </div>
-      </section>
+      <aside className="hidden lg:flex flex-col gap-5 pt-16">
+        {progress}
+        {statsLink}
+        {community && (
+          <a href={community} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 rounded-2xl border-2 border-green bg-green-soft">
+            <span className="text-[#1DA851]">{WA}</span>
+            <span className="text-lg font-semibold">{t('community.title')}: <b>{t('community.cta')}</b></span>
+          </a>
+        )}
+      </aside>
     </div>
   );
 }

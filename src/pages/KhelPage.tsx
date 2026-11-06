@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Home, Play, X } from 'lucide-react';
 import { getLivePuzzles, getPuzzleByNumber, getTimeStats } from '@/lib/api';
-import { markDone } from '@/lib/progress';
-import { suggest } from '@/lib/suggest';
+import { doneIds, markDone } from '@/lib/progress';
+import { isQuick } from '@/lib/suggest';
+import { nextAfter } from '@/lib/next';
 import { myTime, saveMyTime } from '@/lib/myTimes';
 import { formatDuration, mrDigits } from '@/lib/dates';
 import { publicFileUrl } from '@/lib/supabase';
@@ -21,7 +22,8 @@ const CHANNELS: Channel[] = ['whatsapp', 'facebook', 'instagram', 'copy', 'nativ
 
 export default function KhelPage() {
   const { n } = useParams();
-  const { search } = useLocation();
+  const location = useLocation();
+  const { search } = location;
   const { t, i18n } = useTranslation();
   const lang: Lang = i18n.language === 'en' ? 'en' : 'mr';
   const num = Number(n);
@@ -34,6 +36,11 @@ export default function KhelPage() {
   const navigate = useNavigate();
   // For the "left early" suggestion on the puzzle page
   const progressRef = useRef({ started: false, completed: false, since: Date.now() });
+  const offerRef = useRef<((auto: boolean) => void) | null>(null);
+  const nudgeShownRef = useRef(false);
+  const [nudge, setNudge] = useState(false);
+  const [rules, setRules] = useState(false);
+  const [easier, setEasier] = useState<Puzzle | null>(null);
   // Read through a ref so a late-arriving setting never re-runs the counting effect
   const community = useCommunityLink();
   const communityRef = useRef('');
@@ -106,33 +113,37 @@ export default function KhelPage() {
         .catch(() => {});
     if (myTime(pid) != null) prepareCard(savedCard());
 
-    // After finishing: suggest one puzzle to play next, shown inside the puzzle's result screen.
-    const offerNext = async () => {
+    // After finishing: the next puzzle, shown under the puzzle's result. Fresh finish: it starts by itself
+    // after a short countdown (once the card is on screen). Reopening a finished puzzle: no countdown.
+    const offerNext = async (auto: boolean) => {
       const href = communityRef.current;
       const join = href ? { title: t('community.finishTitle'), cta: t('community.cta'), href } : null;
-      let s: ReturnType<typeof suggest>[number] | undefined;
+      let p: Puzzle | null = null;
       try {
-        [s] = suggest(await getLivePuzzles({ limit: 60 }), 'finished', { exclude: [pid], limit: 1 });
+        p = nextAfter(await getLivePuzzles({ limit: 400 }), pid);
       } catch {
-        /* no suggestion is fine */
+        /* no next puzzle is fine */
       }
       const win = frameRef.current?.contentWindow;
       if (!win) return;
-      if (s) {
-        const p = s.puzzle;
+      if (p) {
         win.postMessage(
           {
             __ckHost: 1,
             type: 'next',
-            kicker: s.reason === 'resume' ? t('next.kickerResume') : t('next.kicker'),
+            kicker: t('next.kicker'),
             title: pick(p, 'name', lang),
             sub: [p.type ? pick(p.type, 'name', lang) : '', pick(p, 'time', lang)].filter(Boolean).join(' · '),
             tile: p.type?.tile ?? 'क',
-            cta: s.reason === 'resume' ? t('next.resume') : t('next.play'),
+            cta: auto ? t('playbar.startNow') : t('next.play'),
             more: t('next.more'),
             close: t('time.close'),
             to: `/khel/${p.number}?from=nx`,
             join,
+            auto: auto ? 5 : 0,
+            autoText: t('playbar.autoText'),
+            stay: t('playbar.stay'),
+            digits: lang === 'mr' ? '०१२३४५६७८९' : '',
           },
           '*',
         );
@@ -140,6 +151,10 @@ export default function KhelPage() {
         win.postMessage({ __ckHost: 1, type: 'join', join, close: t('time.close') }, '*');
       }
     };
+    offerRef.current = offerNext;
+
+    // Stuck on a daily puzzle for a while: a gentle offer of the rules or an easier puzzle
+    let stuckTimer: ReturnType<typeof setTimeout> | undefined;
 
     let startedSent = false;
     let completedSent = false;
@@ -160,11 +175,20 @@ export default function KhelPage() {
       if (m.type === 'started' && !startedSent) {
         startedSent = true;
         track({ puzzle_id: pid, session_id: sessionId, event: 'started' });
+        if (!isQuick(puzzle)) {
+          stuckTimer = setTimeout(() => {
+            if (!progressRef.current.completed && !nudgeShownRef.current) {
+              nudgeShownRef.current = true;
+              setNudge(true);
+            }
+          }, 4 * 60 * 1000);
+        }
       } else if (m.type === 'completed' && !completedSent) {
         completedSent = true;
         progressRef.current.completed = true;
+        setNudge(false);
         markDone(pid);
-        offerNext();
+        offerNext(true);
         if (!startedSent) {
           startedSent = true;
           track({ puzzle_id: pid, session_id: sessionId, event: 'started' });
@@ -230,6 +254,8 @@ export default function KhelPage() {
     window.addEventListener('pagehide', flush);
     return () => {
       flush();
+      clearTimeout(stuckTimer);
+      offerRef.current = null;
       window.removeEventListener('message', onMessage);
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('pagehide', flush);
@@ -245,27 +271,49 @@ export default function KhelPage() {
 
   const name = puzzle ? pick(puzzle, 'name', lang) : '';
   const debug = new URLSearchParams(search).get('ckdebug') === '1';
+  const barBtn = 'inline-flex items-center gap-1.5 min-h-[3rem] px-3 rounded-xl border-2 border-ink bg-paper font-heading font-bold text-lg leading-none whitespace-nowrap';
+  const howLines = puzzle?.type ? pick(puzzle.type, 'how', lang).split('\n').map((l) => l.trim()).filter(Boolean) : [];
+  const openEasier = async () => {
+    if (!puzzle) return;
+    try {
+      setEasier(nextAfter(await getLivePuzzles({ limit: 400 }), puzzle.id, true));
+    } catch {
+      setEasier(null);
+    }
+  };
 
   return (
     <div className="h-[100dvh] flex flex-col bg-paper">
-      <div className="shrink-0 flex items-center gap-3 px-2 sm:px-4 h-14 border-b-[3px] border-ink bg-paper">
-        <Link
-          to={puzzle ? `/k/${puzzle.number}` : '/kodi'}
-          onClick={(e) => {
+      <div className="shrink-0 flex items-center gap-2 px-2 sm:px-4 h-16 border-b-[3px] border-ink bg-paper">
+        <button
+          type="button"
+          onClick={() => {
             // Left part-way after a real try: the puzzle page offers something different to play.
             const pr = progressRef.current;
             if (puzzle && pr.started && !pr.completed && Date.now() - pr.since > 45000) {
-              e.preventDefault();
               navigate(`/k/${puzzle.number}`, { state: { leftEarly: true } });
+            } else if (location.key !== 'default') {
+              navigate(-1);
+            } else {
+              navigate('/');
             }
           }}
-          className="inline-flex items-center gap-2 min-h-[2.75rem] px-3 rounded-xl border-[3px] border-ink bg-paper font-heading font-bold text-lg"
+          className={barBtn}
         >
           <ArrowLeft size={22} strokeWidth={2.6} aria-hidden="true" />
-          {t('play.back')}
+          {t('playbar.back')}
+        </button>
+        <Link to="/" className={barBtn}>
+          <Home size={22} strokeWidth={2.6} aria-hidden="true" />
+          {t('playbar.home')}
         </Link>
-        <span className="font-heading font-bold text-xl truncate">{name}</span>
-        <img src="/brand/logo-mark.webp" alt="" aria-hidden="true" width={250} height={80} className="ml-auto h-10 w-auto hidden sm:block" />
+        <span className="hidden sm:block flex-1 min-w-0 font-heading font-bold text-xl truncate text-center">{name}</span>
+        <span className="sm:hidden flex-1" />
+        {puzzle?.type && (
+          <button type="button" onClick={() => setRules(true)} className={barBtn}>
+            {t('playbar.rules')}
+          </button>
+        )}
       </div>
 
       {debug && <ShareDiag frameRef={frameRef} siteNote={siteNote} />}
@@ -289,6 +337,8 @@ export default function KhelPage() {
             }
             win.postMessage({ __ckHost: 1, type: 'hostShare', ok }, '*');
             if (cardRef.current) win.postMessage({ __ckHost: 1, type: 'card', ...cardRef.current }, '*');
+            // Reopening a finished puzzle: show what to play next under its result (no countdown)
+            if (puzzle && doneIds().has(puzzle.id)) setTimeout(() => offerRef.current?.(false), 1200);
           }}
         />
       ) : (
@@ -304,6 +354,74 @@ export default function KhelPage() {
               <Link to="/kodi" className="btn btn-primary mt-6">{t('play.allPuzzles')}</Link>
             </div>
           )}
+        </div>
+      )}
+
+      {nudge && (
+        <section
+          aria-label={t('playbar.stuckTitle')}
+          className="fixed left-3 right-3 bottom-3 z-40 mx-auto max-w-md p-4 rounded-3xl border-[3px] border-ink bg-green-soft shadow-sticker"
+        >
+          <div className="flex items-start gap-3">
+            <p className="flex-1 font-heading font-extrabold text-2xl leading-tight">{t('playbar.stuckTitle')}</p>
+            <button type="button" onClick={() => setNudge(false)} aria-label={t('playbar.close')} className="grid place-items-center h-11 w-11 rounded-xl border-2 border-ink bg-white">
+              <X size={22} strokeWidth={2.8} aria-hidden="true" />
+            </button>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2.5">
+            <button type="button" className="btn btn-quiet !text-lg !px-2" onClick={() => { setNudge(false); setRules(true); }}>
+              {t('playbar.rules')}
+            </button>
+            <button type="button" className="btn btn-quiet !text-lg !px-2" onClick={() => { setNudge(false); openEasier(); }}>
+              {t('playbar.easier')}
+            </button>
+          </div>
+        </section>
+      )}
+
+      {easier && (
+        <div className="fixed inset-0 z-50 grid place-items-end sm:place-items-center bg-ink/50 p-3" onClick={() => setEasier(null)}>
+          <div role="dialog" aria-label={t('playbar.easier')} className="w-full max-w-md p-5 rounded-3xl border-[3px] border-ink bg-paper" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <span className="tile shrink-0" style={{ width: 52, height: 52, fontSize: 26 }} aria-hidden="true">{easier.type?.tile ?? 'क'}</span>
+              <div className="min-w-0">
+                <p className="text-base font-bold text-orange-deep">{t('playbar.easier')}</p>
+                <p className="font-heading font-extrabold text-2xl leading-tight">{pick(easier, 'name', lang)}</p>
+              </div>
+            </div>
+            <Link to={`/khel/${easier.number}?from=lv`} className="btn btn-primary w-full mt-4 !min-h-[4rem] !text-[1.5rem]" onClick={() => setEasier(null)}>
+              <Play size={24} strokeWidth={2.8} fill="currentColor" aria-hidden="true" />
+              {t('next.play')}
+            </Link>
+            <button type="button" className="btn btn-quiet w-full mt-3" onClick={() => setEasier(null)}>{t('playbar.close')}</button>
+          </div>
+        </div>
+      )}
+
+      {rules && puzzle?.type && (
+        <div className="fixed inset-0 z-50 grid place-items-end sm:place-items-center bg-ink/50 p-3" onClick={() => setRules(false)}>
+          <div
+            role="dialog"
+            aria-label={t('playbar.rulesTitle')}
+            className="w-full max-w-lg max-h-[85dvh] overflow-y-auto p-5 rounded-3xl border-[3px] border-ink bg-paper"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-heading-md">{t('playbar.rulesTitle')}</h2>
+            <p className="mt-1 text-lg text-ink/75">{pick(puzzle.type, 'name', lang)}</p>
+            {howLines.length ? (
+              <ol className="mt-3 grid gap-2.5">
+                {howLines.map((l, i) => (
+                  <li key={i} className="flex gap-3 text-xl leading-snug">
+                    <span className="tile shrink-0" style={{ width: 34, height: 34, fontSize: 17 }} aria-hidden="true">{lang === 'mr' ? mrDigits(i + 1) : i + 1}</span>
+                    <span>{l}</span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="mt-3 text-xl leading-snug">{pick(puzzle.type, 'about', lang)}</p>
+            )}
+            <button type="button" className="btn btn-primary w-full mt-5" onClick={() => setRules(false)}>{t('playbar.close')}</button>
+          </div>
         </div>
       )}
     </div>

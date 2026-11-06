@@ -44,7 +44,7 @@ export default function Footer() {
   const { t } = useTranslation();
 
   return (
-    <footer className="bg-navy text-white border-t-[3px] border-ink mt-10 pb-20 lg:pb-0">
+    <footer className="bg-navy text-white border-t-[3px] border-ink mt-10">
       <div className="max-w-site mx-auto px-5 py-5 lg:py-7 grid gap-4 lg:grid-cols-[auto_1fr] lg:gap-10 items-start">
         <div className="hidden lg:block">
           <div className="inline-block bg-paper rounded-2xl p-1.5 border-[3px] border-ink">

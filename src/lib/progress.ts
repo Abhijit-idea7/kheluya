@@ -11,6 +11,11 @@ function readDone(): Record<string, number> {
   }
 }
 
+/** Puzzle id → when this phone first completed it (ms). */
+export function doneAt(): Record<string, number> {
+  return readDone();
+}
+
 /** Puzzle ids this phone has completed. */
 export function doneIds(): Set<string> {
   return new Set(Object.keys(readDone()));

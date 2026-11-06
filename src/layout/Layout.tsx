@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Header from '@/components/Header';
-import BottomNav from '@/components/BottomNav';
 import Footer from '@/components/Footer';
 
 export default function Layout({ notFound }: { notFound?: React.ReactNode } = {}) {
@@ -18,7 +17,6 @@ export default function Layout({ notFound }: { notFound?: React.ReactNode } = {}
         {notFound ?? <Outlet />}
       </main>
       <Footer />
-      <BottomNav />
     </div>
   );
 }
