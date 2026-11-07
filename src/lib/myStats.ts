@@ -23,7 +23,9 @@ export type MyStats = {
 
 function readTimes(): Record<string, number> {
   try {
-    return JSON.parse(localStorage.getItem('ck-my-times') || '{}') as Record<string, number>;
+    const raw = JSON.parse(localStorage.getItem('ck-my-times') || '{}') as unknown;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+    return raw as Record<string, number>;
   } catch {
     return {};
   }

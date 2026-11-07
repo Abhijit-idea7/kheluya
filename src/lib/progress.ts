@@ -5,7 +5,12 @@ const DONE_KEY = 'ck-done';
 
 function readDone(): Record<string, number> {
   try {
-    return JSON.parse(localStorage.getItem(DONE_KEY) || '{}') as Record<string, number>;
+    const raw = JSON.parse(localStorage.getItem(DONE_KEY) || '{}') as unknown;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+    // keep only well-formed entries (puzzle id → time), so damaged data never breaks a page
+    const out: Record<string, number> = {};
+    for (const [k, v] of Object.entries(raw as Record<string, unknown>)) if (typeof v === 'number' && Number.isFinite(v) && v > 0) out[k] = v;
+    return out;
   } catch {
     return {};
   }
