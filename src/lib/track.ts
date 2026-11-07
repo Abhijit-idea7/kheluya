@@ -31,7 +31,7 @@ export function newSessionId(): string {
   return uuid();
 }
 
-const REF_TO_CHANNEL: Record<string, string> = { wa: 'wa', fb: 'fb', ig: 'ig', cp: 'cp', sh: 'sh' };
+const REF_TO_CHANNEL: Record<string, string> = { wa: 'wa', fb: 'fb', ig: 'ig', cp: 'cp', sh: 'sh', cm: 'cm' };
 /** The ?s= tag on a shared link, if any. */
 export function readRef(search: string): string | null {
   const s = new URLSearchParams(search).get('s');

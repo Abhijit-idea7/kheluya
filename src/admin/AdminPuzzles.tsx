@@ -15,6 +15,33 @@ export function statusOf(p: Pick<Puzzle, 'status' | 'live_date'>): { label: stri
   return { label: 'Live', tone: 'green' };
 }
 
+/** Today's WhatsApp-community post, with links tagged ?s=cm so Stats can count community taps. */
+function CommunityPost({ rows }: { rows: Puzzle[] }) {
+  const today = istToday();
+  const [copied, setCopied] = useState(false);
+  const live = rows.filter((p) => p.status === 'live' && p.live_date === today).sort((a, b) => a.number - b.number);
+  if (!live.length) return null;
+  const lines = live.map((p) => `🧩 ${(p as any).type?.name_mr ?? p.name_mr}: kheluya.in/${p.number}?s=cm`);
+  const text = ['शुभ सकाळ! आजचे कोडे तयार आहे 🙏', '', ...lines, '', 'चला खेळूया!'].join('\n');
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(text); } catch {
+      const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove();
+    }
+    setCopied(true); setTimeout(() => setCopied(false), 2500);
+  };
+  return (
+    <Card className="mt-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="text-xl font-bold mr-auto">Today’s post for the WhatsApp community</h2>
+        <button className={btnPrimary} onClick={copy}>{copied ? 'Copied ✓' : 'Copy post'}</button>
+        <a className={btnQuiet} href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noreferrer">Open in WhatsApp</a>
+      </div>
+      <pre className="mt-3 whitespace-pre-wrap font-body text-lg bg-white rounded-xl border border-line p-3">{text}</pre>
+      <p className="mt-2 text-sm text-ink/55">These links end in ?s=cm, so Stats can show how many people came from the community. Edit the words freely, but keep the links as they are.</p>
+    </Card>
+  );
+}
+
 export default function AdminPuzzles() {
   const [rows, setRows] = useState<Puzzle[] | null>(null);
   const [error, setError] = useState('');
@@ -50,6 +77,7 @@ export default function AdminPuzzles() {
           </button>
         ))}
       </div>
+      {rows && <CommunityPost rows={rows} />}
       {error && <p className="mt-4 font-bold text-[#8A1C14]">{error}</p>}
       {!rows ? (
         <p className="mt-6 animate-pulse">Loading…</p>

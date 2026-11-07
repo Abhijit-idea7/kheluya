@@ -344,6 +344,46 @@ function Returning({ from, to }: { from: string; to: string }) {
   );
 }
 
+// ---------- WhatsApp community links (?s=cm) ----------
+type CDay = { day: string; players: number; new_players: number; back_next_day: number };
+function Community({ from, to }: { from: string; to: string }) {
+  const [days, setDays] = useState<CDay[] | null>(null);
+  const [err, setErr] = useState('');
+  const today = istToday();
+  useEffect(() => {
+    let alive = true;
+    setDays(null); setErr('');
+    supabase!.rpc('admin_community', { p_from: from, p_to: to }).then(({ data, error }) => {
+      if (!alive) return;
+      if (error) return setErr(error.message.includes('admin_community') ? 'Community figures: the new database step has not been applied yet.' : error.message);
+      const by = new Map(((data ?? []) as any[]).map((r) => [r.day, { day: r.day, players: Number(r.players) || 0, new_players: Number(r.new_players) || 0, back_next_day: Number(r.back_next_day) || 0 }]));
+      const out: CDay[] = [];
+      for (let d = from; d <= to && out.length < 400; d = addDays(d, 1)) out.push(by.get(d) ?? { day: d, players: 0, new_players: 0, back_next_day: 0 });
+      setDays(out);
+    });
+    return () => { alive = false; };
+  }, [from, to]);
+  if (err) return <p className="font-bold text-[#8A1C14]">{err}</p>;
+  if (!days) return <p className="animate-pulse">Loading…</p>;
+  const t = days.reduce((a, d) => ({ p: a.p + d.players, nw: a.nw + d.new_players }), { p: 0, nw: 0 });
+  const known = days.filter((d) => addDays(d.day, 1) < today).reduce((a, d) => ({ p: a.p + d.players, b: a.b + d.back_next_day }), { p: 0, b: 0 });
+  return (
+    <div>
+      <h3 className="text-xl font-bold">From the WhatsApp community</h3>
+      <p className="text-sm text-ink/55 mb-3">People who tapped a community link (ending ?s=cm). Get today’s post under Admin → Puzzles.</p>
+      {t.p === 0 ? (
+        <p className="text-ink/70">No taps from community links in these dates yet. Post today’s link from Admin → Puzzles to start counting.</p>
+      ) : (
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-3">
+          <Kpi label="Taps from community" value={n(t.p)} sub="people per day, added up" spark={days.map((d) => d.players)} />
+          <Kpi label="New to the site" value={n(t.nw)} sub={`${pct(t.nw, t.p)} were first visits`} />
+          <Kpi label="Back next day" value={pct(known.b, known.p)} sub="of community players" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------- repeat visits ----------
 function VisitPattern({ puzzleId, from, to }: { puzzleId: string; from: string; to: string }) {
   const [v, setV] = useState<Record<string, number> | null>(null);
@@ -565,6 +605,9 @@ export default function AdminStats() {
       <h2 className="mt-8 text-2xl">Returning players</h2>
       <Card className="mt-3">
         <Returning from={from} to={to} />
+      </Card>
+      <Card className="mt-3">
+        <Community from={from} to={to} />
       </Card>
 
       {/* Puzzle table */}
