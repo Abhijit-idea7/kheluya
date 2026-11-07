@@ -384,6 +384,54 @@ function Community({ from, to }: { from: string; to: string }) {
   );
 }
 
+// ---------- shop: visits and book interest ----------
+type SDay = { day: string; visitors: number; views: number; started: number; interested: number; copies: number };
+function Shop({ from, to }: { from: string; to: string }) {
+  const [days, setDays] = useState<SDay[] | null>(null);
+  const [err, setErr] = useState('');
+  const [metric, setMetric] = useState<'visitors' | 'interested'>('visitors');
+  useEffect(() => {
+    let alive = true;
+    setDays(null); setErr('');
+    supabase!.rpc('admin_shop_stats', { p_from: from, p_to: to }).then(({ data, error }) => {
+      if (!alive) return;
+      if (error) return setErr(error.message.includes('admin_shop_stats') ? 'Shop figures: the new database step has not been applied yet.' : error.message);
+      setDays(((data ?? []) as any[]).map((r) => ({ day: r.day, visitors: Number(r.visitors) || 0, views: Number(r.views) || 0, started: Number(r.started) || 0, interested: Number(r.interested) || 0, copies: Number(r.copies) || 0 })));
+    });
+    return () => { alive = false; };
+  }, [from, to]);
+  if (err) return <p className="font-bold text-[#8A1C14]">{err}</p>;
+  if (!days) return <p className="animate-pulse">Loading…</p>;
+  const t = days.reduce((a, d) => ({ v: a.v + d.visitors, s: a.s + d.started, i: a.i + d.interested, c: a.c + d.copies }), { v: 0, s: 0, i: 0, c: 0 });
+  return (
+    <div>
+      <h3 className="text-xl font-bold">Shop · large-print puzzle book</h3>
+      <p className="text-sm text-ink/55 mb-3">Visits to the shop page and the “tell me when it’s ready” form. The names and numbers are under Admin → People.</p>
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+        <Kpi label="Shop visitors" value={n(t.v)} sub="people per day, added up" spark={days.map((d) => d.visitors)} />
+        <Kpi label="Started the form" value={n(t.s)} sub={`${pct(t.s, t.v)} of visitors`} />
+        <Kpi label="Left their number" value={n(t.i)} sub={`${pct(t.i, t.v)} of visitors`} spark={days.map((d) => d.interested)} />
+        <Kpi label="Copies asked for" value={n(t.c)} sub="where people said" />
+      </div>
+      {t.v > 0 && (
+        <div className="mt-4">
+          <Tabs small value={metric} onChange={setMetric} items={[['visitors', 'Shop visitors'], ['interested', 'Left their number']]} />
+          <div className="mt-3">
+            <LineChart label={metric === 'visitors' ? 'Shop visitors per day' : 'Numbers left per day'} points={days.map((d) => ({ x: d.day, y: d[metric] }))} fmt={n} whole height={200}
+              tooltip={(i) => { const d = days[i]; return (
+                <div className="text-sm">
+                  <div className="font-bold">{longDate(d.day)}</div>
+                  <div>Visitors: {n(d.visitors)} ({n(d.views)} visits)</div>
+                  <div>Started the form: {n(d.started)}</div>
+                  <div>Left their number: {n(d.interested)}{d.copies ? ` · ${n(d.copies)} copies` : ''}</div>
+                </div>); }} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------- repeat visits ----------
 function VisitPattern({ puzzleId, from, to }: { puzzleId: string; from: string; to: string }) {
   const [v, setV] = useState<Record<string, number> | null>(null);
@@ -608,6 +656,9 @@ export default function AdminStats() {
       </Card>
       <Card className="mt-3">
         <Community from={from} to={to} />
+      </Card>
+      <Card className="mt-3">
+        <Shop from={from} to={to} />
       </Card>
 
       {/* Puzzle table */}

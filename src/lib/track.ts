@@ -105,3 +105,22 @@ export function trackArrival(puzzleId: string, sessionId: string, ref: string | 
   }
   track({ puzzle_id: puzzleId, session_id: sessionId, event: 'arrived', ref });
 }
+
+/** Page-level counting that is not about one puzzle (e.g. the shop page). Never throws. */
+const SITE_SESSION = uuid();
+export function trackSite(event: 'shop_view' | 'book_form_start'): void {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    if (import.meta.env.DEV) console.info('[ck-track]', event);
+    return;
+  }
+  try {
+    fetch(`${SUPABASE_URL}/rest/v1/site_events`, {
+      method: 'POST',
+      keepalive: true,
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ player_id: playerId(), session_id: SITE_SESSION, event }),
+    }).catch(() => {});
+  } catch {
+    /* never let counting break the page */
+  }
+}

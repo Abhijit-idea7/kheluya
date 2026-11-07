@@ -64,7 +64,7 @@ export async function getPlayCounts(): Promise<Record<string, number>> {
   return Object.fromEntries(((data ?? []) as { puzzle_id: string; completed: number }[]).map((r) => [r.puzzle_id, Number(r.completed)]));
 }
 
-export async function addSubscriber(row: { name: string; phone: string; city: string; interest: string; source_page: string }) {
+export async function addSubscriber(row: { name: string; phone: string; city: string; interest: string; source_page: string; copies?: number | null; note?: string }) {
   if (!supabase) throw new Error('offline');
   const { error } = await supabase.from('subscribers').insert({ ...row, consent: true });
   if (error) throw error;

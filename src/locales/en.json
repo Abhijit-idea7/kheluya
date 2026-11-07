@@ -79,7 +79,7 @@
     "shop": {
       "soon": "Soon",
       "title": "The puzzle book is coming",
-      "body": "100 puzzles in large print, solved with a pen. A lovely gift too.",
+      "body": "101 puzzles in large print, solved with a pen. A lovely gift too.",
       "cta": "Tell me when it arrives"
     },
     "notify": {
@@ -391,5 +391,40 @@
     "about": "About us",
     "english": "English",
     "marathi": "मराठी"
+  },
+  "book": {
+    "title": "Large-print Marathi word puzzles",
+    "sub": "Our first printed book — coming soon.",
+    "soon": "Coming soon",
+    "points": [
+      "101 hand-picked Marathi word puzzles",
+      "Large, bold letters — easy to read",
+      "From easy to a little tricky",
+      "All answers at the back",
+      "A lovely gift for parents and grandparents"
+    ],
+    "formTitle": "We'll tell you when the book is ready",
+    "phone": "Your WhatsApp number",
+    "phoneHint": "We'll message this number when the book is ready.",
+    "name": "Your name (optional)",
+    "city": "Town / city (optional)",
+    "copies": "How many copies? (optional)",
+    "copiesHint": "For yourself and as gifts.",
+    "c1": "1",
+    "c2": "2",
+    "c3": "3",
+    "c5": "5+",
+    "note": "Which puzzles should the book have? (optional)",
+    "noteHint": "Write a suggestion or a question here.",
+    "submit": "Tell me when it's ready",
+    "saving": "Saving…",
+    "consent": "By pressing the button you agree that we may message you on WhatsApp about the book. We never share your number.",
+    "badPhone": "Please enter a 10-digit mobile number.",
+    "error": "Something went wrong. Please try again in a little while.",
+    "thanks": "Thank you! You're on the list.",
+    "already": "You're on the list ✓",
+    "thanksBody": "We'll message you on WhatsApp as soon as the book is ready.",
+    "playToday": "Play today's puzzle",
+    "another": "Sign up someone else?"
   }
 }
