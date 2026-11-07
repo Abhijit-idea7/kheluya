@@ -227,6 +227,123 @@ function Overview({ daily }: { daily: Daily }) {
   );
 }
 
+// ---------- returning players ----------
+type RDay = { day: string; active: number; new_players: number; returning_players: number; back_next_day: number; back_within_7: number };
+type RSum = { players: number; new_players: number; came_back: number; regulars: number; avg_days: number };
+const R_NUM = ['active', 'new_players', 'returning_players', 'back_next_day', 'back_within_7'] as const;
+
+function Returning({ from, to }: { from: string; to: string }) {
+  const [days, setDays] = useState<RDay[] | null>(null);
+  const [sum, setSum] = useState<RSum | null>(null);
+  const [err, setErr] = useState('');
+  const [metric, setMetric] = useState('returning');
+  const [asTable, setAsTable] = useState(false);
+  const today = istToday();
+  useEffect(() => {
+    let alive = true;
+    setDays(null); setSum(null); setErr('');
+    Promise.all([
+      supabase!.rpc('admin_retention', { p_from: from, p_to: to }),
+      supabase!.rpc('admin_retention_summary', { p_from: from, p_to: to }),
+    ]).then(([a, b]) => {
+      if (!alive) return;
+      const e = a.error || b.error;
+      if (e) return setErr(e.message.includes('admin_retention') ? 'Returning players: the new database step has not been applied yet.' : e.message);
+      const by = new Map(((a.data ?? []) as RDay[]).map((r) => {
+        const o: any = { day: r.day };
+        R_NUM.forEach((k) => (o[k] = Number(r[k]) || 0));
+        return [r.day, o as RDay];
+      }));
+      const out: RDay[] = [];
+      for (let d = from; d <= to && out.length < 400; d = addDays(d, 1))
+        out.push(by.get(d) ?? { day: d, active: 0, new_players: 0, returning_players: 0, back_next_day: 0, back_within_7: 0 });
+      setDays(out);
+      const s = ((b.data ?? []) as any[])[0] ?? {};
+      setSum({ players: Number(s.players) || 0, new_players: Number(s.new_players) || 0, came_back: Number(s.came_back) || 0, regulars: Number(s.regulars) || 0, avg_days: Number(s.avg_days) || 0 });
+    });
+    return () => { alive = false; };
+  }, [from, to]);
+
+  if (err) return <p className="font-bold text-[#8A1C14]">{err}</p>;
+  if (!days || !sum) return <p className="animate-pulse">Loading…</p>;
+
+  // A day's "back next day" is only known once the next day is over; "within 7 days" once 7 more days have passed.
+  const nextKnown = (d: string) => addDays(d, 1) < today;
+  const weekKnown = (d: string) => addDays(d, 7) < today;
+  const share = (a: number, b: number) => (b ? (a / b) * 100 : null);
+  const R_METRICS: { key: string; label: string; get: (d: RDay) => number | null; fmt: (v: number) => string }[] = [
+    { key: 'returning', label: 'Returning players', get: (d) => d.returning_players, fmt: n },
+    { key: 'new', label: 'New players', get: (d) => d.new_players, fmt: n },
+    { key: 'share', label: 'Returning %', get: (d) => share(d.returning_players, d.active), fmt: (v) => `${Math.round(v)}%` },
+    { key: 'next', label: 'Back next day %', get: (d) => (nextKnown(d.day) ? share(d.back_next_day, d.active) : null), fmt: (v) => `${Math.round(v)}%` },
+    { key: 'week', label: 'Back within 7 days %', get: (d) => (weekKnown(d.day) ? share(d.back_within_7, d.active) : null), fmt: (v) => `${Math.round(v)}%` },
+  ];
+  const m = R_METRICS.find((x) => x.key === metric)!;
+
+  // Compare the first and last 7 days of the range for the "growth" line.
+  const avg = (xs: RDay[]) => (xs.length ? xs.reduce((t, d) => t + d.returning_players, 0) / xs.length : 0);
+  const first = avg(days.slice(0, 7)), last = avg(days.slice(-7));
+  const growth = days.length >= 14 && first > 0 ? Math.round(((last - first) / first) * 100) : null;
+  const tot = days.reduce((t, d) => ({ a: t.a + d.active, r: t.r + d.returning_players }), { a: 0, r: 0 });
+  const nk = days.filter((d) => nextKnown(d.day)).reduce((t, d) => ({ a: t.a + d.active, b: t.b + d.back_next_day }), { a: 0, b: 0 });
+  const wk = days.filter((d) => weekKnown(d.day)).reduce((t, d) => ({ a: t.a + d.active, b: t.b + d.back_within_7 }), { a: 0, b: 0 });
+
+  return (
+    <div>
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-4 mb-4">
+        <Kpi label="Returning players / day" value={days.length ? (tot.r / days.length).toFixed(1) : '–'}
+          sub={growth == null ? 'average' : `${growth >= 0 ? '▲' : '▼'} ${Math.abs(growth)}% last 7 days vs first 7`}
+          spark={days.map((d) => d.returning_players)} />
+        <Kpi label="Came back" value={n(sum.came_back)} sub={`of ${n(sum.players)} players played on 2+ days`} />
+        <Kpi label="Back next day" value={pct(nk.b, nk.a)} sub="of a day's players return tomorrow" />
+        <Kpi label="Back within 7 days" value={pct(wk.b, wk.a)} sub={`regulars (4+ days): ${n(sum.regulars)}`} />
+      </div>
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <h3 className="text-xl font-bold mr-auto">Returning players · day by day</h3>
+        <button className="text-sm font-bold text-orange-deep hover:underline" onClick={() => setAsTable(!asTable)}>{asTable ? 'Show chart' : 'Show as table'}</button>
+        <button className="text-sm font-bold text-orange-deep hover:underline" onClick={() => downloadCsv(`chala-kheluya-returning-${from}-to-${to}.csv`, days.map((d) => ({
+          date: d.day, players: d.active, new_players: d.new_players, returning_players: d.returning_players,
+          back_next_day: nextKnown(d.day) ? d.back_next_day : '', back_within_7_days: weekKnown(d.day) ? d.back_within_7 : '',
+        })))}>Download CSV</button>
+      </div>
+      {!asTable ? (
+        <>
+          <Tabs small value={metric} onChange={setMetric} items={R_METRICS.map((x) => [x.key, x.label])} />
+          <div className="mt-3">
+            <LineChart label={`${m.label} per day`} points={days.map((d) => ({ x: d.day, y: m.get(d) }))} fmt={m.fmt} whole height={240}
+              tooltip={(i) => { const d = days[i]; return (
+                <div className="text-sm">
+                  <div className="font-bold">{longDate(d.day)}</div>
+                  <div>Players: {n(d.active)} · new {n(d.new_players)} · returning {n(d.returning_players)}</div>
+                  <div>Back next day: {nextKnown(d.day) ? `${n(d.back_next_day)} (${pct(d.back_next_day, d.active)})` : 'not known yet'}</div>
+                  <div>Back within 7 days: {weekKnown(d.day) ? `${n(d.back_within_7)} (${pct(d.back_within_7, d.active)})` : 'not known yet'}</div>
+                </div>); }} />
+          </div>
+        </>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm bg-white rounded-xl border border-line border-separate border-spacing-0 overflow-hidden">
+            <thead className="bg-cream"><tr>{['Date', 'Players', 'New', 'Returning', 'Back next day', 'Back within 7 days'].map((h) => <th key={h} className="px-3 py-2 font-bold whitespace-nowrap">{h}</th>)}</tr></thead>
+            <tbody>
+              {[...days].reverse().map((d) => (
+                <tr key={d.day} className={d.active ? '' : 'text-ink/40'}>
+                  <td className="px-3 py-1.5 border-t border-line whitespace-nowrap font-bold">{longDate(d.day)}</td>
+                  <td className="px-3 py-1.5 border-t border-line tabular-nums">{n(d.active)}</td>
+                  <td className="px-3 py-1.5 border-t border-line tabular-nums">{n(d.new_players)}</td>
+                  <td className="px-3 py-1.5 border-t border-line tabular-nums">{n(d.returning_players)} <span className="text-ink/55">({pct(d.returning_players, d.active)})</span></td>
+                  <td className="px-3 py-1.5 border-t border-line tabular-nums">{nextKnown(d.day) ? `${n(d.back_next_day)} (${pct(d.back_next_day, d.active)})` : '…'}</td>
+                  <td className="px-3 py-1.5 border-t border-line tabular-nums">{weekKnown(d.day) ? `${n(d.back_within_7)} (${pct(d.back_within_7, d.active)})` : '…'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p className="mt-2 text-sm text-ink/55">“Returning” = played on an earlier day too. One phone = one player. Back-next-day and 7-day figures appear once those days have passed.</p>
+    </div>
+  );
+}
+
 // ---------- repeat visits ----------
 function VisitPattern({ puzzleId, from, to }: { puzzleId: string; from: string; to: string }) {
   const [v, setV] = useState<Record<string, number> | null>(null);
@@ -444,6 +561,11 @@ export default function AdminStats() {
           <Trend daily={daily.data} title="Daily engagement · all puzzles" csvName={`chala-kheluya-daily-${from}-to-${to}.csv`} />
         </Card>
       )}
+
+      <h2 className="mt-8 text-2xl">Returning players</h2>
+      <Card className="mt-3">
+        <Returning from={from} to={to} />
+      </Card>
 
       {/* Puzzle table */}
       <div className="mt-8 flex flex-wrap items-center gap-3">
