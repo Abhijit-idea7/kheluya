@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Home, Play, X } from 'lucide-react';
-import { getLivePuzzles, getPuzzleByNumber, getTimeStats } from '@/lib/api';
+import { getLivePuzzles, getPublicSettings, getPuzzleByNumber, getTimeStats } from '@/lib/api';
 import { doneIds, markDone } from '@/lib/progress';
 import { isQuick } from '@/lib/suggest';
 import { nextAfter } from '@/lib/next';
@@ -14,6 +14,8 @@ import { newSessionId, readRef, track, trackArrival, type Channel } from '@/lib/
 import { shortLink } from '@/lib/share';
 import { makeChallengeCard, type ResultCard } from '@/lib/shareCard';
 import { useCommunityLink } from '@/lib/community';
+import FestivalGreeting, { festivalActive, festivalFrom } from '@/components/FestivalGreeting';
+import { useAsync } from '@/lib/useAsync';
 import { pick, type Lang, type Puzzle } from '@/lib/types';
 import Illustration from '@/components/Illustration';
 
@@ -41,6 +43,12 @@ export default function KhelPage() {
   const [nudge, setNudge] = useState(false);
   const [rules, setRules] = useState(false);
   const [easier, setEasier] = useState<Puzzle | null>(null);
+  // Festival greeting (Admin → Settings): once each time a puzzle opens, while its dates last
+  const { data: settings } = useAsync(() => getPublicSettings(), []);
+  const fest = festivalFrom(settings);
+  const [showFest, setShowFest] = useState(false);
+  const festShownRef = useRef(false);
+  const endFest = useCallback(() => setShowFest(false), []);
   // Read through a ref so a late-arriving setting never re-runs the counting effect
   const community = useCommunityLink();
   const communityRef = useRef('');
@@ -263,6 +271,13 @@ export default function KhelPage() {
   }, [puzzle, phase, search, sessionId, t, lang, navigate]);
 
   useEffect(() => {
+    if (phase !== 'ready' || !settings || festShownRef.current) return;
+    if (new URLSearchParams(search).get('preview') === '1') return;
+    festShownRef.current = true;
+    if (festivalActive(festivalFrom(settings))) setShowFest(true);
+  }, [phase, settings, search]);
+
+  useEffect(() => {
     if (puzzle) document.title = `${pick(puzzle, 'name', lang)} · चला खेळूया`;
     return () => {
       document.title = 'चला खेळूया · रोज एक मराठी कोडे';
@@ -356,6 +371,8 @@ export default function KhelPage() {
           )}
         </div>
       )}
+
+      {showFest && <FestivalGreeting text={fest.text} sound={fest.sound} onDone={endFest} />}
 
       {nudge && (
         <section

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { btnPrimary, Card, Field, input } from '@/admin/ui';
+import { btnPrimary, btnQuiet, Card, Field, input } from '@/admin/ui';
+import FestivalGreeting, { festivalActive, festivalFrom } from '@/components/FestivalGreeting';
+import { addDays, istToday } from '@/lib/dates';
 
 const SWITCHES: { key: string; label: string; when: string }[] = [
   { key: 'show_play_counts', label: 'Show "solved by N people" on puzzle cards', when: 'After a few weeks of real counts' },
@@ -20,21 +22,31 @@ const LINKS: { key: string; label: string; hint: string }[] = [
   { key: 'link_whatsapp_channel', label: 'WhatsApp Channel link', hint: 'https://whatsapp.com/channel/…' },
 ];
 
+const FEST_KEYS = ['festival_on', 'festival_text', 'festival_from', 'festival_to', 'festival_sound'];
+
 export default function AdminSettings() {
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
+  const [preview, setPreview] = useState(false);
 
   useEffect(() => {
-    supabase!.from('site_settings').select('key,value').then(({ data }) => setValues(Object.fromEntries((data ?? []).map((r) => [r.key, r.value]))));
+    supabase!.from('site_settings').select('key,value').then(({ data }) => {
+      const v: Record<string, unknown> = Object.fromEntries((data ?? []).map((r) => [r.key, r.value]));
+      if (typeof v.festival_text !== 'string') v.festival_text = 'दिवाळीच्या हार्दिक शुभेच्छा!';
+      if (typeof v.festival_from !== 'string' || !v.festival_from) v.festival_from = istToday();
+      if (typeof v.festival_to !== 'string' || !v.festival_to) v.festival_to = addDays(istToday(), 4);
+      if (typeof v.festival_sound !== 'boolean') v.festival_sound = true;
+      setValues(v);
+    });
   }, []);
 
   const save = async () => {
     setBusy(true);
     setMsg('');
-    const rows = [...SWITCHES.map((s) => s.key), ...LINKS.map((l) => l.key)].map((key) => ({
+    const rows = [...SWITCHES.map((s) => s.key), ...LINKS.map((l) => l.key), ...FEST_KEYS].map((key) => ({
       key,
-      value: values[key] ?? (key.startsWith('link_') ? '' : false),
+      value: values[key] ?? (key.startsWith('link_') || ['festival_text', 'festival_from', 'festival_to'].includes(key) ? '' : false),
       updated_at: new Date().toISOString(),
     }));
     const { error } = await supabase!.from('site_settings').upsert(rows, { onConflict: 'key' });
@@ -80,6 +92,40 @@ export default function AdminSettings() {
             </Field>
           ))}
         </div>
+      </Card>
+      <Card className="mt-5">
+        <h2 className="text-xl mb-1">Festival greeting</h2>
+        <p className="text-sm text-ink/60 mb-3">
+          A short greeting with a diya and fireworks, shown each time someone opens a puzzle, between the two dates (India time). It switches itself off after the end date.
+        </p>
+        <label className="flex items-center gap-3 font-bold">
+          <input type="checkbox" className="h-6 w-6" checked={values.festival_on === true} onChange={(e) => setValues((v) => ({ ...v, festival_on: e.target.checked }))} />
+          Show the festival greeting
+        </label>
+        <div className="mt-4 grid gap-4">
+          <Field label="Message">
+            <input className={input} value={String(values.festival_text ?? '')} onChange={(e) => setValues((v) => ({ ...v, festival_text: e.target.value }))} />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="From">
+              <input type="date" className={input} value={String(values.festival_from ?? '')} onChange={(e) => setValues((v) => ({ ...v, festival_from: e.target.value }))} />
+            </Field>
+            <Field label="To (last day)">
+              <input type="date" className={input} value={String(values.festival_to ?? '')} onChange={(e) => setValues((v) => ({ ...v, festival_to: e.target.value }))} />
+            </Field>
+          </div>
+          <label className="flex items-center gap-3">
+            <input type="checkbox" className="h-6 w-6" checked={values.festival_sound !== false} onChange={(e) => setValues((v) => ({ ...v, festival_sound: e.target.checked }))} />
+            <span>Short firework sound (stays silent for players who turned puzzle sounds off)</span>
+          </label>
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="button" className={btnQuiet} onClick={() => setPreview(true)} disabled={!String(values.festival_text ?? '').trim()}>Preview</button>
+            <span className="text-sm font-bold">
+              {festivalActive(festivalFrom(values)) ? 'Showing to players now' : values.festival_on === true ? 'Switched on, but not within its dates' : 'Off'}
+            </span>
+          </div>
+        </div>
+        {preview && <FestivalGreeting text={String(values.festival_text ?? '')} sound={values.festival_sound !== false} onDone={() => setPreview(false)} />}
       </Card>
       <div className="mt-5 flex items-center gap-3">
         <button className={btnPrimary} onClick={save} disabled={busy}>{busy ? 'Saving…' : 'Save settings'}</button>
