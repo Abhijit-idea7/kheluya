@@ -336,7 +336,15 @@
     "statsLine": "My play: {{n}} puzzles · {{d}} days in a row",
     "statsLineShort": "My play: {{n}} puzzles",
     "all": "All puzzles",
-    "none": "The first puzzle is coming soon."
+    "none": "The first puzzle is coming soon.",
+    "restart": "Start this puzzle again from the beginning",
+    "restartAsk": "Everything filled in so far will be cleared. Start again?",
+    "restartYes": "Yes, start again",
+    "restartNo": "No",
+    "playToday": "Play today's puzzle",
+    "playLatest": "Play the newest puzzle",
+    "olderLabel": "Unfinished puzzle",
+    "olderGo": "Continue"
   },
   "mine": {
     "title": "My play",

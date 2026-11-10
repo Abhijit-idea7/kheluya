@@ -54,3 +54,46 @@ export function startedNumbers(): Set<number> {
   }
   return out;
 }
+
+const TOUCH_KEY = 'ck-touched';
+
+/** Puzzle number → when it was last played on this phone (ms). Older phones have no entry for older puzzles. */
+export function touchedAt(): Record<string, number> {
+  try {
+    const raw = JSON.parse(localStorage.getItem(TOUCH_KEY) || '{}') as unknown;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+    const out: Record<string, number> = {};
+    for (const [k, v] of Object.entries(raw as Record<string, unknown>)) if (typeof v === 'number' && Number.isFinite(v) && v > 0) out[k] = v;
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/** Remember that puzzle `n` was played just now. */
+export function touchPuzzle(n: number): void {
+  const all = touchedAt();
+  all[String(n)] = Date.now();
+  try {
+    localStorage.setItem(TOUCH_KEY, JSON.stringify(all));
+  } catch {
+    /* storage blocked */
+  }
+}
+
+/** Wipe the saved progress of puzzle `n`, so it starts fresh (and stops showing as half-done). */
+export function forgetProgress(n: number): void {
+  try {
+    const drop: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i) ?? '';
+      if (k.startsWith(`p${n}:`)) drop.push(k);
+    }
+    drop.forEach((k) => localStorage.removeItem(k));
+    const all = touchedAt();
+    delete all[String(n)];
+    localStorage.setItem(TOUCH_KEY, JSON.stringify(all));
+  } catch {
+    /* storage blocked */
+  }
+}

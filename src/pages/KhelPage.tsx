@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Home, Play, X } from 'lucide-react';
 import { getLivePuzzles, getPublicSettings, getPuzzleByNumber, getTimeStats } from '@/lib/api';
-import { doneIds, markDone } from '@/lib/progress';
+import { doneIds, markDone, touchPuzzle } from '@/lib/progress';
 import { isQuick } from '@/lib/suggest';
 import { nextAfter } from '@/lib/next';
 import { myTime, saveMyTime } from '@/lib/myTimes';
@@ -179,7 +179,7 @@ export default function KhelPage() {
         if (/^\/khel\/\d+(\?from=(nx|lv|fy|qk))?$/.test(to) || to === '/kodi') navigate(to);
         return;
       }
-      if (m.type === 'started') progressRef.current.started = true;
+      if (m.type === 'started') { progressRef.current.started = true; touchPuzzle(puzzle.number); }
       if (m.type === 'started' && !startedSent) {
         startedSent = true;
         track({ puzzle_id: pid, session_id: sessionId, event: 'started' });
@@ -260,8 +260,13 @@ export default function KhelPage() {
     };
     document.addEventListener('visibilitychange', onVis);
     window.addEventListener('pagehide', flush);
+    // Mark "played today" when a puzzle with saved progress is opened, so Home can offer to continue it today.
+    try {
+      for (let i = 0; i < localStorage.length; i++) if ((localStorage.key(i) ?? '').startsWith(`p${puzzle.number}:`)) { touchPuzzle(puzzle.number); break; }
+    } catch { /* storage blocked */ }
     return () => {
       flush();
+      if (progressRef.current.started && !progressRef.current.completed) touchPuzzle(puzzle.number);
       clearTimeout(stuckTimer);
       offerRef.current = null;
       window.removeEventListener('message', onMessage);

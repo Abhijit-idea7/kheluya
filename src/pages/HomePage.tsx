@@ -1,6 +1,7 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Check, Clock, Play, Star } from 'lucide-react';
+import { Check, Clock, Play, RotateCcw, Star } from 'lucide-react';
 import Tile from '@/components/Tile';
 import Illustration from '@/components/Illustration';
 import { getLivePuzzles } from '@/lib/api';
@@ -10,6 +11,7 @@ import { todayPlan } from '@/lib/next';
 import { myStats } from '@/lib/myStats';
 import { useCommunityLink } from '@/lib/community';
 import { mrDigits } from '@/lib/dates';
+import { forgetProgress } from '@/lib/progress';
 
 const WA = (
   <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.7-1.2 2.2 2.2 0 0 0 .2-1.2c0-.1-.3-.2-.5-.3Z" /></svg>
@@ -22,6 +24,8 @@ export default function HomePage() {
   const num = (v: number | string) => (lang === 'mr' ? mrDigits(v) : String(v));
   const community = useCommunityLink();
   const { data: puzzles, loading } = useAsync(() => getLivePuzzles({ limit: 400 }), []);
+  const navigate = useNavigate();
+  const [askRestart, setAskRestart] = useState(false);
 
   const hour = Number(new Date(Date.now() + 330 * 60000).toISOString().slice(11, 13));
   const greet = hour < 12 ? t('home2.greetMorning') : hour < 17 ? t('home2.greetDay') : t('home2.greetEvening');
@@ -61,6 +65,17 @@ export default function HomePage() {
     title = t('home2.quickTitle');
     btn = t('home2.quickBtn');
   }
+
+  // When continuing a half-done puzzle, the other thing to play: today's puzzle, else the quick one.
+  const other =
+    half && p
+      ? plan.main && !plan.mainDone && plan.main.id !== p.id
+        ? plan.main
+        : plan.quick && !plan.quickDone && plan.quick.id !== p.id
+          ? plan.quick
+          : null
+      : null;
+  const otherLabel = other && other.id === plan.main?.id ? (plan.mainIsToday ? t('home2.playToday') : t('home2.playLatest')) : t('home2.quickBtn');
 
   const pill = (n: string, label: string, done: boolean) => (
     <div className={`flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-2xl border-2 ${done ? 'bg-green-soft border-green' : 'bg-paper border-line'}`}>
@@ -170,6 +185,53 @@ export default function HomePage() {
           <Link to={`/khel/${p.number}`} className="btn btn-primary w-full !min-h-[5.25rem] !text-[2rem] !rounded-3xl">
             <Play size={30} strokeWidth={2.8} fill="currentColor" aria-hidden="true" />
             {btn}
+          </Link>
+        )}
+
+        {/* Half-done puzzle: never the only way forward — start it again, or play today's instead */}
+        {half && p && (
+          <div className="grid gap-3">
+            {other && (
+              <Link to={`/khel/${other.number}`} className="btn btn-quiet w-full">
+                <Play size={20} strokeWidth={2.8} fill="currentColor" aria-hidden="true" />
+                {otherLabel}
+              </Link>
+            )}
+            {!askRestart ? (
+              <button type="button" onClick={() => setAskRestart(true)} className="inline-flex items-center justify-center gap-2 min-h-[3rem] text-lg font-semibold text-ink/75 underline underline-offset-4">
+                <RotateCcw size={19} strokeWidth={2.6} aria-hidden="true" />
+                {t('home2.restart')}
+              </button>
+            ) : (
+              <div className="rounded-2xl border-2 border-ink bg-paper p-4 text-center">
+                <p className="text-lg font-semibold">{t('home2.restartAsk')}</p>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <button type="button" className="btn btn-quiet" onClick={() => setAskRestart(false)}>{t('home2.restartNo')}</button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => {
+                      forgetProgress(p.number);
+                      navigate(`/khel/${p.number}`);
+                    }}
+                  >
+                    {t('home2.restartYes')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* An unfinished puzzle from an earlier day: offered quietly, below today's */}
+        {!half && plan.older && (
+          <Link to={`/khel/${plan.older.number}`} className="flex items-center gap-3 p-3 rounded-2xl border-2 border-line bg-paper">
+            <Tile char={plan.older.type?.tile ?? 'क'} size={44} className="shrink-0" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-base text-ink/65">{t('home2.olderLabel')}</span>
+              <span className="block text-lg font-bold leading-tight truncate">{pick(plan.older, 'name', lang)}</span>
+            </span>
+            <span className="text-lg font-bold text-orange-deep whitespace-nowrap">{t('home2.olderGo')} →</span>
           </Link>
         )}
 
