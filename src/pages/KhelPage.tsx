@@ -168,7 +168,7 @@ export default function KhelPage() {
     let completedSent = false;
     const onMessage = (e: MessageEvent) => {
       if (e.source !== frameRef.current?.contentWindow) return;
-      const m = e.data as { __ck?: number; type?: string; channel?: string; time_ms?: number; mistakes?: number; hints?: number };
+      const m = e.data as { __ck?: number; type?: string; channel?: string; time_ms?: number; mistakes?: number; hints?: number; restored?: boolean };
       if (!m || m.__ck !== 1) return;
       if (m.type === 'diag') {
         logDiag(`frame: ${String((m as { s?: string }).s ?? '')}`);
@@ -190,6 +190,22 @@ export default function KhelPage() {
               setNudge(true);
             }
           }, 4 * 60 * 1000);
+        }
+      } else if (m.type === 'completed' && m.restored && !completedSent) {
+        // Reopened a puzzle finished earlier (its end screen came back from saved progress).
+        // Record it as done if this phone had missed it, and offer the next puzzle; no new solve time.
+        completedSent = true;
+        progressRef.current.completed = true;
+        setNudge(false);
+        const already = doneIds().has(pid);
+        markDone(pid);
+        if (!already) {
+          offerNext(false);
+          if (!startedSent) {
+            startedSent = true;
+            track({ puzzle_id: pid, session_id: sessionId, event: 'started' });
+          }
+          track({ puzzle_id: pid, session_id: sessionId, event: 'completed' });
         }
       } else if (m.type === 'completed' && !completedSent) {
         completedSent = true;

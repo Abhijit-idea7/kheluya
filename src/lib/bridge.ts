@@ -163,6 +163,10 @@ export function bridgeScript(shortLink: string, storagePrefix = ''): string {
       w.__ck = 1; window.brandFinish = w; } }
   document.addEventListener('DOMContentLoaded', hookFinish);
   window.addEventListener('load', hookFinish);
+  // A puzzle finished earlier and reopened redraws its end screen without brandFinish(): ask it directly.
+  function checkRestored(){ try { if (done) return;
+      if (typeof BR !== 'undefined' && BR && typeof BR.isDone === 'function' && BR.isDone()) { done = true; post({ type: 'completed', restored: true }); } } catch(e) {} }
+  window.addEventListener('load', function(){ setTimeout(checkRestored, 400); });
   var wo = window.open;
   window.open = function(u){ later(chan(u)); return wo.apply(window, arguments); };
   // Runs after the puzzle's own click handlers (which may fill in the link at tap time).
