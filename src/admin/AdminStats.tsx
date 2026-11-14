@@ -534,7 +534,7 @@ function PuzzleDetail({ r, from, to }: { r: Row; from: string; to: string }) {
 // ---------- main screen ----------
 type SortKey = 'number' | 'players' | 'opens' | 'rate' | 'median' | 'play' | 'shares';
 
-export default function AdminStats() {
+function DetailedStats() {
   const today = istToday();
   const [from, setFrom] = useState(addDays(today, -29));
   const [to, setTo] = useState(today);
@@ -624,7 +624,7 @@ export default function AdminStats() {
     <div>
       {/* Header + date range */}
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-3xl mr-auto">Stats</h1>
+        <h2 className="text-2xl mr-auto">Detailed stats</h2>
         <Tabs<string>
           value={presetOn(7) ? '7' : presetOn(30) ? '30' : presetOn(90) ? '90' : 'custom'}
           onChange={(v) => v !== 'custom' && preset(Number(v))}
@@ -769,6 +769,136 @@ export default function AdminStats() {
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+
+// ---------- simple view: six numbers, day to day ----------
+type SDay6 = { day: string; players: number; new_players: number; returning_players: number; solvers: number; shares: number; via_links: number };
+const SIX: { key: keyof Omit<SDay6, 'day'>; label: string; hint: string }[] = [
+  { key: 'players', label: 'Players', hint: 'people who opened a puzzle' },
+  { key: 'new_players', label: 'New', hint: 'first visit ever' },
+  { key: 'returning_players', label: 'Returning', hint: 'played on an earlier day too' },
+  { key: 'solvers', label: 'Solved', hint: 'finished at least one puzzle' },
+  { key: 'shares', label: 'Shares', hint: 'share-button taps' },
+  { key: 'via_links', label: 'Came via links', hint: 'from shared or community links' },
+];
+const toDay6 = (r: any): SDay6 => ({
+  day: r.day, players: Number(r.players) || 0, new_players: Number(r.new_players) || 0, returning_players: Number(r.returning_players) || 0,
+  solvers: Number(r.solvers) || 0, shares: Number(r.shares) || 0, via_links: Number(r.via_links) || 0,
+});
+
+function SimpleStats() {
+  const today = istToday();
+  const from = addDays(today, -13);
+  const [days, setDays] = useState<SDay6[] | null>(null);
+  const [cmp, setCmp] = useState<SDay6 | null>(null);
+  const [err, setErr] = useState('');
+  // India clock time now, e.g. "13:20:05" — yesterday is counted only up to this time, for a fair comparison
+  const nowIst = new Date(Date.now() + 330 * 60000).toISOString().slice(11, 19);
+  const nowLabel = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit' });
+  useEffect(() => {
+    let alive = true;
+    Promise.all([
+      supabase!.rpc('admin_simple_stats', { p_from: from, p_to: today }),
+      supabase!.rpc('admin_simple_stats', { p_from: addDays(today, -1), p_to: addDays(today, -1), p_cutoff: nowIst }),
+    ]).then(([a, b]) => {
+      if (!alive) return;
+      const e = a.error || b.error;
+      if (e) return setErr(e.message.includes('admin_simple_stats') ? 'Stats: the new database step has not been applied yet.' : e.message);
+      setDays(((a.data ?? []) as any[]).map(toDay6));
+      setCmp(((b.data ?? []) as any[]).map(toDay6)[0] ?? null);
+    });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (err) return <p className="font-bold text-[#8A1C14]">{err}</p>;
+  if (!days) return <p className="animate-pulse">Loading…</p>;
+  const t = days.find((d) => d.day === today);
+  const yFull = days.find((d) => d.day === addDays(today, -1));
+  const short = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-IN', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
+
+  return (
+    <div>
+      <p className="text-sm text-ink/60 mb-3">
+        Today so far (till {nowLabel}), compared with <b>yesterday by the same time</b>. Every number counts people — one phone is one person,
+        however many times it reloads.
+      </p>
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-3">
+        {SIX.map(({ key, label, hint }) => {
+          const now = t?.[key] ?? 0;
+          const was = cmp?.[key] ?? 0;
+          const diff = now - was;
+          return (
+            <div key={key} className="rounded-2xl border-2 border-ink bg-paper px-4 pt-3 pb-2 flex flex-col">
+              <div className="text-sm font-bold text-ink/65">{label}</div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-heading font-extrabold tabular-nums">{n(now)}</span>
+                <span className={`text-sm font-bold ${diff > 0 ? 'text-green' : diff < 0 ? 'text-[#8A1C14]' : 'text-ink/50'}`}>
+                  {diff > 0 ? '▲' : diff < 0 ? '▼' : '='} {n(Math.abs(diff))}
+                </span>
+              </div>
+              <div className="text-sm text-ink/60">by now yesterday: {n(was)} · all day: {n(yFull?.[key] ?? 0)}</div>
+              <div className="text-xs text-ink/45">{hint}</div>
+              <div className="mt-auto pt-1"><Sparkline values={days.map((d) => d[key])} /></div>
+            </div>
+          );
+        })}
+      </div>
+
+      <h3 className="text-xl font-bold mt-6 mb-2">Last 14 days</h3>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm bg-white rounded-xl border border-line border-separate border-spacing-0 overflow-hidden">
+          <thead className="bg-cream">
+            <tr>
+              <th className="px-3 py-2 font-bold">Day</th>
+              {SIX.map((m) => <th key={m.key} className="px-3 py-2 font-bold whitespace-nowrap">{m.label}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {[...days].reverse().map((d) => (
+              <tr key={d.day} className={d.day === today ? 'bg-orange-soft/60' : ''}>
+                <td className="px-3 py-1.5 border-t border-line whitespace-nowrap font-bold">
+                  {short(d.day)}{d.day === today ? ` (till ${nowLabel})` : ''}
+                </td>
+                {SIX.map((m) => (
+                  <td key={m.key} className="px-3 py-1.5 border-t border-line tabular-nums">{n(d[m.key])}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <button
+        className="mt-2 text-sm font-bold text-orange-deep hover:underline"
+        onClick={() => downloadCsv(`chala-kheluya-daily-${from}-to-${today}.csv`, days.map((d) => ({ date: d.day, players: d.players, new: d.new_players, returning: d.returning_players, solved: d.solvers, shares: d.shares, came_via_links: d.via_links })))}
+      >
+        Download CSV
+      </button>
+    </div>
+  );
+}
+
+export default function AdminStats() {
+  const [more, setMore] = useState(false);
+  return (
+    <div>
+      <h1 className="text-3xl">Stats</h1>
+      <div className="mt-4">
+        <SimpleStats />
+      </div>
+      <div className="mt-8 border-t-2 border-line pt-4">
+        <button className={btnQuiet} onClick={() => setMore((v) => !v)}>
+          {more ? 'Hide detailed stats' : 'Show detailed stats (puzzles, retention, community, shop)'}
+        </button>
+        {more && (
+          <div className="mt-6">
+            <DetailedStats />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
