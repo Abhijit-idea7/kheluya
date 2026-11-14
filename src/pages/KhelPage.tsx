@@ -334,11 +334,7 @@ export default function KhelPage({ num, today = false }: { num: number; today?: 
             <span className="max-[359px]:hidden">{t('nav.kodi')}</span>
           </Link>
         )}
-        {puzzle?.type && (
-          <button type="button" onClick={() => setRules(true)} className={barBtn}>
-            {t('playbar.rulesShort')}
-          </button>
-        )}
+        {/* Rules: the puzzle's own "?" button shows them, so no separate button here */}
       </div>
 
       {debug && <ShareDiag frameRef={frameRef} siteNote={siteNote} />}
