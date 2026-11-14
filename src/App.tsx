@@ -1,11 +1,9 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import Layout from '@/layout/Layout';
-import HomePage from '@/pages/HomePage';
+import TodayPage from '@/pages/TodayPage';
 import KodiPage from '@/pages/KodiPage';
 import MajhaKhelPage from '@/pages/MajhaKhelPage';
-import PrakarPage from '@/pages/PrakarPage';
-import KodiEkPage from '@/pages/KodiEkPage';
 import KhelPage from '@/pages/KhelPage';
 import MadatPage from '@/pages/MadatPage';
 import KutumbPage from '@/pages/KutumbPage';
@@ -26,28 +24,36 @@ import {
 } from '@/pages/DhoranPages';
 import NotFoundPage from '@/pages/NotFoundPage';
 import ShortNumberRedirect from '@/pages/ShortNumberRedirect';
+import StaleGuard from '@/components/StaleGuard';
 
 const AdminPage = lazy(() => import('@/pages/AdminPage'));
 
 /** A new play page (and counting session) for every puzzle, also when moving from one to the next. */
 function KhelRoute() {
   const { n } = useParams();
-  return <KhelPage key={n} />;
+  return <KhelPage key={n} num={Number(n)} />;
+}
+
+/** Old puzzle info pages (/k/12) now open the puzzle itself. */
+function OldInfoRedirect() {
+  const { n } = useParams();
+  return <Navigate to={`/khel/${n}`} replace />;
 }
 
 export default function App() {
   return (
     <BrowserRouter>
+      <StaleGuard />
       <Routes>
+        <Route path="/" element={<TodayPage />} />
         <Route path="/khel/:n" element={<KhelRoute />} />
         <Route path="/admin/*" element={<Suspense fallback={<p className="p-6">Loading…</p>}><AdminPage /></Suspense>} />
         <Route path="/:n" element={<ShortNumberRedirect />} />
         <Route element={<Layout />}>
-          <Route path="/" element={<HomePage />} />
           <Route path="/kodi" element={<KodiPage />} />
           <Route path="/majha-khel" element={<MajhaKhelPage />} />
-          <Route path="/prakar/:type" element={<PrakarPage />} />
-          <Route path="/k/:n" element={<KodiEkPage />} />
+          <Route path="/prakar/:type" element={<Navigate to="/kodi" replace />} />
+          <Route path="/k/:n" element={<OldInfoRedirect />} />
           <Route path="/madat" element={<MadatPage />} />
           <Route path="/kutumb" element={<KutumbPage />} />
           <Route path="/amchyabaddal" element={<AmchyabaddalPage />} />

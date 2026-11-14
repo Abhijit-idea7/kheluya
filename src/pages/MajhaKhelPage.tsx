@@ -6,7 +6,8 @@ import { getLivePuzzles, getTimeStats } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
 import { pick, type Lang } from '@/lib/types';
 import { myStats } from '@/lib/myStats';
-import { todayPlan } from '@/lib/next';
+import { randomUnplayed, todayPuzzle } from '@/lib/next';
+import { doneIds } from '@/lib/progress';
 import { dayName, dayTile, formatDuration, mrDigits } from '@/lib/dates';
 
 /** "माझा खेळ": the player's own numbers, from this phone only. */
@@ -22,7 +23,9 @@ export default function MajhaKhelPage() {
   if (loading || !puzzles || !stats) {
     return <p className="max-w-xl mx-auto px-4 py-10 text-xl font-heading font-bold animate-pulse">{t('play.loading')}</p>;
   }
-  const next = todayPlan(puzzles).next;
+  // Today's puzzle if not solved yet, else a random one not played yet
+  const tp = todayPuzzle(puzzles);
+  const next = tp && !doneIds().has(tp.id) ? tp : randomUnplayed(puzzles);
 
   const minutes = Math.round(stats.totalMs / 60000);
   const timeTxt = minutes >= 60

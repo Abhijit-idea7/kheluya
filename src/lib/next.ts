@@ -1,82 +1,44 @@
-// "What should the big button play?" — one place that decides, from what this phone has done.
+// What to play: today's puzzle (the same for everyone), and "आणखी खेळा" (a random puzzle this phone has not played).
 import type { Puzzle } from '@/lib/types';
 import { doneAt, startedNumbers, touchedAt } from '@/lib/progress';
 import { istToday } from '@/lib/dates';
-import { isQuick } from '@/lib/suggest';
 
 export const istDay = (ms: number) => new Date(ms + 330 * 60000).toISOString().slice(0, 10);
 
-export type TodayPlan = {
-  /** today's daily puzzle (or the newest one if none is set for today) */
-  main: Puzzle | null;
-  mainIsToday: boolean;
-  mainDone: boolean;
-  /** a quick puzzle finished today, else the next quick one not yet played */
-  quick: Puzzle | null;
-  quickDone: boolean;
-  /** a puzzle half-done on this phone and played today (today's main first) */
-  resume: Puzzle | null;
-  /** a half-done puzzle from an earlier day: offered quietly, never the big button */
-  older: Puzzle | null;
-  /** what the big button plays */
-  next: Puzzle | null;
-  state: 'resume' | 'fresh' | 'quick' | 'done';
-};
-
-/** `puzzles`: live puzzles, newest first. */
-export function todayPlan(puzzles: Puzzle[]): TodayPlan {
+/**
+ * Today's puzzle: the one released today; if several, the lowest number. If none is set for today,
+ * the most recently released one. `puzzles`: live, released puzzles (any order).
+ * An unfinished puzzle from another day never takes its place.
+ */
+export function todayPuzzle(puzzles: Puzzle[]): Puzzle | null {
   const today = istToday();
-  const done = doneAt();
-  const started = startedNumbers();
-  const real = puzzles.filter((p) => !p.sample);
-  const dailies = real.filter((p) => !isQuick(p));
-  const quicks = real.filter(isQuick);
-  const isDone = (p: Puzzle) => !!done[p.id];
-
-  const main = dailies.find((p) => p.live_date === today) ?? dailies[0] ?? null;
-  const mainDone = !!main && isDone(main);
-  const quickToday = quicks.find((p) => done[p.id] && istDay(done[p.id]) === today) ?? null;
-  // Oldest quick puzzle first, so everyone meets them in the same easy order
-  const quickNext = [...quicks].reverse().find((p) => !isDone(p)) ?? null;
-  const quick = quickToday ?? quickNext;
-  const quickDone = !!quickToday;
-  const half = real.filter((p) => started.has(p.number) && !isDone(p));
-  // Only a puzzle played TODAY takes over the big button; yesterday's unfinished one must not block today's.
-  const touched = touchedAt();
-  const playedToday = (p: Puzzle) => !!touched[String(p.number)] && istDay(touched[String(p.number)]) === today;
-  const resume = (main && half.includes(main) && (main.live_date === today || playedToday(main)) ? main : half.find(playedToday)) ?? null;
-  const older =
-    half
-      .filter((p) => p !== resume)
-      .sort((a, b) => (touched[String(b.number)] ?? 0) - (touched[String(a.number)] ?? 0))[0] ?? null;
-
-  const unplayedDaily = dailies.find((p) => !isDone(p) && p.id !== main?.id) ?? null;
-  const next =
-    resume ?? (main && !mainDone ? main : null) ?? (!quickDone && quickNext ? quickNext : null) ?? unplayedDaily ?? quickNext ?? null;
-  const state: TodayPlan['state'] = resume ? 'resume' : main && !mainDone ? 'fresh' : !quickDone && quickNext ? 'quick' : 'done';
-  return { main, mainIsToday: main?.live_date === today, mainDone, quick, quickDone, resume, older, next, state };
+  const real = puzzles.filter((p) => !p.sample && p.live_date && p.live_date <= today);
+  const todays = real.filter((p) => p.live_date === today).sort((a, b) => a.number - b.number);
+  if (todays.length) return todays[0];
+  return [...real].sort((a, b) => (b.live_date ?? '').localeCompare(a.live_date ?? '') || b.number - a.number)[0] ?? null;
 }
 
 /**
- * After finishing `currentId`: the puzzle to start next.
- * 1 another half-done puzzle played today · 2 today's main · 3 a quick one not yet played · 4 newest daily not played
- * After giving up (`easy`): a quick one first.
+ * "आणखी खेळा": a random released puzzle this phone has not opened yet (no list, no decision).
+ * If every puzzle has been tried, the unfinished one played most recently; null when everything is done.
  */
-export function nextAfter(puzzles: Puzzle[], currentId: string, easy = false): Puzzle | null {
+export function randomUnplayed(puzzles: Puzzle[], excludeId?: string): Puzzle | null {
   const today = istToday();
   const done = doneAt();
   const started = startedNumbers();
+  const pool = puzzles.filter((p) => !p.sample && p.live_date && p.live_date <= today && p.id !== excludeId && !done[p.id]);
+  const fresh = pool.filter((p) => !started.has(p.number));
+  if (fresh.length) return fresh[Math.floor(Math.random() * fresh.length)];
   const touched = touchedAt();
-  const playedToday = (p: Puzzle) => !!touched[String(p.number)] && istDay(touched[String(p.number)]) === today;
-  const pool = puzzles.filter((p) => !p.sample && p.id !== currentId && !done[p.id]);
-  const quicks = [...pool.filter(isQuick)].reverse();
-  const dailies = pool.filter((p) => !isQuick(p));
-  if (easy) return quicks[0] ?? dailies[0] ?? null;
-  return (
-    pool.find((p) => started.has(p.number) && playedToday(p)) ??
-    dailies.find((p) => p.live_date === today) ??
-    quicks[0] ??
-    dailies[0] ??
-    null
-  );
+  return [...pool].sort((a, b) => (touched[String(b.number)] ?? 0) - (touched[String(a.number)] ?? 0))[0] ?? null;
+}
+
+/** Puzzles started on this phone and not finished, most recently played first. */
+export function unfinished(puzzles: Puzzle[]): Puzzle[] {
+  const done = doneAt();
+  const started = startedNumbers();
+  const touched = touchedAt();
+  return puzzles
+    .filter((p) => !p.sample && started.has(p.number) && !done[p.id])
+    .sort((a, b) => (touched[String(b.number)] ?? 0) - (touched[String(a.number)] ?? 0));
 }

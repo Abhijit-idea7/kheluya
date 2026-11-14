@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Home, Play, X } from 'lucide-react';
+import { Grid2x2, Home, X } from 'lucide-react';
 import { getLivePuzzles, getPublicSettings, getPuzzleByNumber, getTimeStats } from '@/lib/api';
 import { doneIds, markDone, touchPuzzle } from '@/lib/progress';
-import { isQuick } from '@/lib/suggest';
-import { nextAfter } from '@/lib/next';
+import { randomUnplayed } from '@/lib/next';
+import MenuButton from '@/components/MenuButton';
 import { myTime, saveMyTime } from '@/lib/myTimes';
-import { formatDuration, mrDigits } from '@/lib/dates';
+import { formatDuration, istToday, mrDigits, prettyDate } from '@/lib/dates';
 import { publicFileUrl } from '@/lib/supabase';
 import { preparePuzzleHtml } from '@/lib/bridge';
 import { newSessionId, readRef, track, trackArrival, type Channel } from '@/lib/track';
@@ -22,13 +22,12 @@ import Illustration from '@/components/Illustration';
 type Phase = 'loading' | 'ready' | 'missing' | 'nofile' | 'error';
 const CHANNELS: Channel[] = ['whatsapp', 'facebook', 'instagram', 'copy', 'native', 'other'];
 
-export default function KhelPage() {
-  const { n } = useParams();
+/** The play page. `today`: opened as today's puzzle (the site's front page). */
+export default function KhelPage({ num, today = false }: { num: number; today?: boolean }) {
   const location = useLocation();
   const { search } = location;
   const { t, i18n } = useTranslation();
   const lang: Lang = i18n.language === 'en' ? 'en' : 'mr';
-  const num = Number(n);
 
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [html, setHtml] = useState<string>('');
@@ -38,11 +37,10 @@ export default function KhelPage() {
   const navigate = useNavigate();
   // For the "left early" suggestion on the puzzle page
   const progressRef = useRef({ started: false, completed: false, since: Date.now() });
-  const offerRef = useRef<((auto: boolean) => void) | null>(null);
+  const offerRef = useRef<(() => void) | null>(null);
   const nudgeShownRef = useRef(false);
   const [nudge, setNudge] = useState(false);
   const [rules, setRules] = useState(false);
-  const [easier, setEasier] = useState<Puzzle | null>(null);
   // Festival greeting (Admin → Settings): once each time a puzzle opens, while its dates last
   const { data: settings } = useAsync(() => getPublicSettings(), []);
   const fest = festivalFrom(settings);
@@ -121,47 +119,37 @@ export default function KhelPage() {
         .catch(() => {});
     if (myTime(pid) != null) prepareCard(savedCard());
 
-    // After finishing: the next puzzle, shown under the puzzle's result. Fresh finish: it starts by itself
-    // after a short countdown (once the card is on screen). Reopening a finished puzzle: no countdown.
-    const offerNext = async (auto: boolean) => {
+    // After finishing: a big "आणखी खेळा" (a random puzzle not played yet), a small "सर्व कोडी" link and
+    // the WhatsApp community, under the result. Nothing starts by itself.
+    const isToday = today || puzzle.live_date === istToday();
+    const offerNext = async () => {
       const href = communityRef.current;
-      const join = href ? { title: t('community.finishTitle'), cta: t('community.cta'), href } : null;
+      const join = href ? { cta: t('community.cta'), href } : null;
       let p: Puzzle | null = null;
       try {
-        p = nextAfter(await getLivePuzzles({ limit: 400 }), pid);
+        p = randomUnplayed(await getLivePuzzles({ limit: 400 }), pid);
       } catch {
         /* no next puzzle is fine */
       }
       const win = frameRef.current?.contentWindow;
       if (!win) return;
-      if (p) {
-        win.postMessage(
-          {
-            __ckHost: 1,
-            type: 'next',
-            kicker: t('next.kicker'),
-            title: pick(p, 'name', lang),
-            sub: [p.type ? pick(p.type, 'name', lang) : '', pick(p, 'time', lang)].filter(Boolean).join(' · '),
-            tile: p.type?.tile ?? 'क',
-            cta: auto ? t('playbar.startNow') : t('next.play'),
-            more: t('next.more'),
-            close: t('time.close'),
-            to: `/khel/${p.number}?from=nx`,
-            join,
-            auto: auto ? 5 : 0,
-            autoText: t('playbar.autoText'),
-            stay: t('playbar.stay'),
-            digits: lang === 'mr' ? '०१२३४५६७८९' : '',
-          },
-          '*',
-        );
-      } else if (join) {
-        win.postMessage({ __ckHost: 1, type: 'join', join, close: t('time.close') }, '*');
-      }
+      win.postMessage(
+        {
+          __ckHost: 1,
+          type: 'next',
+          kicker: isToday ? t('finish.tomorrow') : '',
+          cta: p ? t('finish.more') : t('finish.all'),
+          to: p ? `/khel/${p.number}?from=nx` : '/kodi',
+          more: p ? t('finish.all') : '',
+          join,
+          close: t('time.close'),
+        },
+        '*',
+      );
     };
     offerRef.current = offerNext;
 
-    // Stuck on a daily puzzle for a while: a gentle offer of the rules or an easier puzzle
+    // Stuck for a while: a gentle offer of the rules or another puzzle
     let stuckTimer: ReturnType<typeof setTimeout> | undefined;
 
     let startedSent = false;
@@ -183,7 +171,7 @@ export default function KhelPage() {
       if (m.type === 'started' && !startedSent) {
         startedSent = true;
         track({ puzzle_id: pid, session_id: sessionId, event: 'started' });
-        if (!isQuick(puzzle)) {
+        {
           stuckTimer = setTimeout(() => {
             if (!progressRef.current.completed && !nudgeShownRef.current) {
               nudgeShownRef.current = true;
@@ -200,7 +188,7 @@ export default function KhelPage() {
         const already = doneIds().has(pid);
         markDone(pid);
         if (!already) {
-          offerNext(false);
+          offerNext();
           if (!startedSent) {
             startedSent = true;
             track({ puzzle_id: pid, session_id: sessionId, event: 'started' });
@@ -212,7 +200,7 @@ export default function KhelPage() {
         progressRef.current.completed = true;
         setNudge(false);
         markDone(pid);
-        offerNext(true);
+        offerNext();
         if (!startedSent) {
           startedSent = true;
           track({ puzzle_id: pid, session_id: sessionId, event: 'started' });
@@ -309,45 +297,46 @@ export default function KhelPage() {
   const debug = new URLSearchParams(search).get('ckdebug') === '1';
   const barBtn = 'inline-flex items-center gap-1.5 min-h-[3rem] px-3 rounded-xl border-2 border-ink bg-paper font-heading font-bold text-lg leading-none whitespace-nowrap';
   const howLines = puzzle?.type ? pick(puzzle.type, 'how', lang).split('\n').map((l) => l.trim()).filter(Boolean) : [];
-  const openEasier = async () => {
+  const playAnother = async () => {
     if (!puzzle) return;
+    let p: Puzzle | null = null;
     try {
-      setEasier(nextAfter(await getLivePuzzles({ limit: 400 }), puzzle.id, true));
+      p = randomUnplayed(await getLivePuzzles({ limit: 400 }), puzzle.id);
     } catch {
-      setEasier(null);
+      p = null;
     }
+    navigate(p ? `/khel/${p.number}?from=lv` : '/kodi');
   };
+  const isTodayPage = today || (!!puzzle && puzzle.live_date === istToday());
 
   return (
     <div className="h-[100dvh] flex flex-col bg-paper">
       <div className="shrink-0 flex items-center gap-2 px-2 sm:px-4 h-16 border-b-[3px] border-ink bg-paper">
-        <button
-          type="button"
-          onClick={() => {
-            // Left part-way after a real try: the puzzle page offers something different to play.
-            const pr = progressRef.current;
-            if (puzzle && pr.started && !pr.completed && Date.now() - pr.since > 45000) {
-              navigate(`/k/${puzzle.number}`, { state: { leftEarly: true } });
-            } else if (location.key !== 'default') {
-              navigate(-1);
-            } else {
-              navigate('/');
-            }
-          }}
-          className={barBtn}
-        >
-          <ArrowLeft size={22} strokeWidth={2.6} aria-hidden="true" />
-          {t('playbar.back')}
-        </button>
-        <Link to="/" className={barBtn}>
-          <Home size={22} strokeWidth={2.6} aria-hidden="true" />
-          {t('playbar.home')}
-        </Link>
-        <span className="hidden sm:block flex-1 min-w-0 font-heading font-bold text-xl truncate text-center">{name}</span>
-        <span className="sm:hidden flex-1" />
+        <MenuButton />
+        {isTodayPage ? (
+          <div className="flex-1 min-w-0 leading-tight">
+            <p className="font-heading font-extrabold text-xl truncate">{t('today.title')}</p>
+            <p className="text-sm font-semibold text-ink/65 truncate">{prettyDate(istToday(), lang)}</p>
+          </div>
+        ) : (
+          <>
+            <Link to="/" className={barBtn}>
+              <Home size={22} strokeWidth={2.6} aria-hidden="true" />
+              {t('today.title')}
+            </Link>
+            <span className="flex-1 min-w-0 hidden sm:block font-heading font-bold text-xl truncate text-center">{name}</span>
+            <span className="flex-1 sm:hidden" />
+          </>
+        )}
+        {isTodayPage && (
+          <Link to="/kodi" className={barBtn}>
+            <Grid2x2 size={20} strokeWidth={2.6} aria-hidden="true" />
+            <span className="max-[359px]:hidden">{t('nav.kodi')}</span>
+          </Link>
+        )}
         {puzzle?.type && (
           <button type="button" onClick={() => setRules(true)} className={barBtn}>
-            {t('playbar.rules')}
+            {t('playbar.rulesShort')}
           </button>
         )}
       </div>
@@ -374,7 +363,7 @@ export default function KhelPage() {
             win.postMessage({ __ckHost: 1, type: 'hostShare', ok }, '*');
             if (cardRef.current) win.postMessage({ __ckHost: 1, type: 'card', ...cardRef.current }, '*');
             // Reopening a finished puzzle: show what to play next under its result (no countdown)
-            if (puzzle && doneIds().has(puzzle.id)) setTimeout(() => offerRef.current?.(false), 1200);
+            if (puzzle && doneIds().has(puzzle.id)) setTimeout(() => offerRef.current?.(), 1200);
           }}
         />
       ) : (
@@ -410,30 +399,11 @@ export default function KhelPage() {
             <button type="button" className="btn btn-quiet !text-lg !px-2" onClick={() => { setNudge(false); setRules(true); }}>
               {t('playbar.rules')}
             </button>
-            <button type="button" className="btn btn-quiet !text-lg !px-2" onClick={() => { setNudge(false); openEasier(); }}>
-              {t('playbar.easier')}
+            <button type="button" className="btn btn-quiet !text-lg !px-2" onClick={() => { setNudge(false); playAnother(); }}>
+              {t('playbar.another')}
             </button>
           </div>
         </section>
-      )}
-
-      {easier && (
-        <div className="fixed inset-0 z-50 grid place-items-end sm:place-items-center bg-ink/50 p-3" onClick={() => setEasier(null)}>
-          <div role="dialog" aria-label={t('playbar.easier')} className="w-full max-w-md p-5 rounded-3xl border-[3px] border-ink bg-paper" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3">
-              <span className="tile shrink-0" style={{ width: 52, height: 52, fontSize: 26 }} aria-hidden="true">{easier.type?.tile ?? 'क'}</span>
-              <div className="min-w-0">
-                <p className="text-base font-bold text-orange-deep">{t('playbar.easier')}</p>
-                <p className="font-heading font-extrabold text-2xl leading-tight">{pick(easier, 'name', lang)}</p>
-              </div>
-            </div>
-            <Link to={`/khel/${easier.number}?from=lv`} className="btn btn-primary w-full mt-4 !min-h-[4rem] !text-[1.5rem]" onClick={() => setEasier(null)}>
-              <Play size={24} strokeWidth={2.8} fill="currentColor" aria-hidden="true" />
-              {t('next.play')}
-            </Link>
-            <button type="button" className="btn btn-quiet w-full mt-3" onClick={() => setEasier(null)}>{t('playbar.close')}</button>
-          </div>
-        </div>
       )}
 
       {rules && puzzle?.type && (

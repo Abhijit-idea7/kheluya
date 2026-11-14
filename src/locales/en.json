@@ -375,8 +375,12 @@
     "today": "Today",
     "yesterday": "Yesterday",
     "quick": "Quick",
-    "more": "More puzzles",
-    "allDone": "You've played them all! A new puzzle comes tomorrow."
+    "more": "Show more",
+    "allDone": "You've played them all! A new puzzle comes tomorrow.",
+    "resume": "Continue",
+    "unfinished": "Unfinished",
+    "all": "All puzzles — newest first",
+    "pickHint": "We'll pick a puzzle you haven't played"
   },
   "playbar": {
     "back": "Back",
@@ -388,7 +392,9 @@
     "easier": "An easier puzzle",
     "autoText": "Next puzzle starts in {s} seconds",
     "startNow": "Start now",
-    "stay": "Stop, stay here"
+    "stay": "Stop, stay here",
+    "rulesShort": "Rules",
+    "another": "Another puzzle"
   },
   "menu": {
     "open": "Menu",
@@ -434,5 +440,18 @@
     "thanksBody": "We'll message you on WhatsApp as soon as the book is ready.",
     "playToday": "Play today's puzzle",
     "another": "Sign up someone else?"
+  },
+  "today": {
+    "title": "Today's puzzle",
+    "none": "Today's puzzle is not out yet. Please check again in a little while."
+  },
+  "finish": {
+    "tomorrow": "A new puzzle comes tomorrow!",
+    "more": "Play another",
+    "all": "See all puzzles"
+  },
+  "stale": {
+    "title": "Today's new puzzle is here!",
+    "play": "Play today's puzzle"
   }
 }

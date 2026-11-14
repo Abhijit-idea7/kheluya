@@ -59,84 +59,50 @@ export function bridgeScript(shortLink: string, storagePrefix = ''): string {
   // "पुढचे कोडे" card from the site: placed under the puzzle's share block (or pinned at the bottom).
   function go(to){ try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen(); } catch(e) {}
     post({ type: 'navigate', to: to }); }
+  // After finishing: one big "आणखी खेळा" (a random unplayed puzzle), a small "सर्व कोडी" link and the
+  // WhatsApp community. Placed right under the result, above the (smaller) share buttons. No countdown.
   window.addEventListener('message', function(e){
     var d = e.data; if (e.source !== parent || !d || d.__ckHost !== 1 || (d.type !== 'next' && d.type !== 'join')) return;
     if (!document.getElementById('ck-next-css')) {
       var st = document.createElement('style'); st.id = 'ck-next-css';
-      st.textContent = '.ck-next{box-sizing:border-box;width:100%;margin:14px 0 4px;padding:14px;background:#FFFAF0;color:#10233F;border:2px solid #10233F;border-radius:18px;box-shadow:0 4px 0 #10233F;font-family:Mukta,"Baloo 2",system-ui,sans-serif;text-align:left}' +
+      st.textContent = '.ck-next{box-sizing:border-box;width:100%;margin:14px 0 10px;padding:14px;background:#FFFAF0;color:#10233F;border:2px solid #10233F;border-radius:18px;box-shadow:0 4px 0 #10233F;font-family:Mukta,"Baloo 2",system-ui,sans-serif;text-align:center}' +
         '.ck-next.pin{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);width:min(94vw,440px);z-index:2147483646}' +
-        '.ck-next-k{font-weight:800;font-size:15px;color:#D97B00;margin:0 0 8px;display:flex;justify-content:space-between;align-items:center}' +
-        '.ck-next-r{display:flex;gap:12px;align-items:center}' +
-        '.ck-next-t{flex:none;width:52px;height:52px;display:grid;place-items:center;border-radius:12px;border:2px solid #8C5E25;background:linear-gradient(180deg,#F6DCA8,#E2B874);box-shadow:inset 0 -5px 0 #C99550;font-weight:800;font-size:24px;color:#10233F}' +
-        '.ck-next-n{font-weight:800;font-size:20px;line-height:1.2}.ck-next-s{font-size:15px;color:#4d5a6c;margin-top:2px}' +
-        '.ck-next-go{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:54px;margin-top:12px;border:2px solid #10233F;border-radius:14px;background:#F39200;color:#10233F;box-shadow:0 3px 0 #10233F;font:800 20px Mukta,"Baloo 2",sans-serif;cursor:pointer}' +
-        '.ck-next-go:active{transform:translateY(2px);box-shadow:0 1px 0 #10233F}' +
-        '.ck-next-more{display:block;margin:8px auto 0;min-height:40px;background:none;border:0;color:#10233F;font:700 16px Mukta,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}' +
-        '.ck-next-cdt{font-weight:700;font-size:19px;line-height:1.3;margin:12px 0 6px}.ck-next-bar{height:10px;border-radius:5px;background:#EFE8D8;overflow:hidden}.ck-next-bar>div{height:100%;background:#F39200;border-radius:5px;transition:width 1s linear}' +
-        '.ck-next-stay{display:flex;align-items:center;justify-content:center;width:100%;min-height:50px;margin-top:10px;border:2px solid #10233F;border-radius:14px;background:#FFFAF0;color:#10233F;font:700 18px Mukta,"Baloo 2",sans-serif;cursor:pointer}' +
-        '.ck-join{margin-top:12px;padding-top:12px;border-top:2px dashed #D9D0BB}.ck-join.only{margin-top:6px;padding-top:0;border-top:0}' +
-        '.ck-join-t{font-weight:700;font-size:17px;line-height:1.3;margin:0 0 8px}' +
-        '.ck-join-go{display:flex;align-items:center;justify-content:center;gap:8px;min-height:50px;border:2px solid #10233F;border-radius:14px;background:#1DA851;color:#fff;box-shadow:0 3px 0 #10233F;font:800 19px Mukta,"Baloo 2",sans-serif;text-decoration:none}' +
-        '.ck-next-x{width:36px;height:36px;border-radius:10px;border:2px solid #10233F;background:#fff;color:#10233F;font-weight:800;cursor:pointer}';
+        '.ck-next-k{font-weight:700;font-size:18px;line-height:1.3;margin:0 0 10px;display:flex;justify-content:center;align-items:center;gap:8px}' +
+        '.ck-next-go{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:68px;border:3px solid #10233F;border-radius:18px;background:#F39200;color:#10233F;box-shadow:0 4px 0 #10233F;font:800 26px Mukta,"Baloo 2",sans-serif;cursor:pointer}' +
+        '.ck-next-go:active{transform:translateY(2px);box-shadow:0 2px 0 #10233F}' +
+        '.ck-next-more{display:block;margin:10px auto 0;min-height:44px;background:none;border:0;color:#10233F;font:700 18px Mukta,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}' +
+        '.ck-join{margin-top:10px;padding-top:10px;border-top:2px dashed #D9D0BB}.ck-join.only{margin-top:0;padding-top:0;border-top:0}' +
+        '.ck-join-go{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;border:2px solid #10233F;border-radius:14px;background:#1DA851;color:#fff;box-shadow:0 2px 0 #10233F;font:700 17px Mukta,"Baloo 2",sans-serif;text-decoration:none}' +
+        '.ck-next-x{width:36px;height:36px;border-radius:10px;border:2px solid #10233F;background:#fff;color:#10233F;font-weight:800;cursor:pointer}' +
+        // The puzzle's own share buttons: smaller, so "आणखी खेळा" stands out
+        '.cks{min-height:44px!important;padding:5px 4px!important;font-size:13px!important;gap:2px!important;box-shadow:0 2px 0 #10233f!important}.cks svg{width:19px!important;height:19px!important}' +
+        '.cks-h{font-size:15px!important}.cks-link{min-height:38px!important;font-size:14px!important}';
       document.head.appendChild(st);
     }
     var old = document.getElementById('ck-next'); if (old) old.remove();
     var box = document.createElement('div'); box.id = 'ck-next'; box.className = 'ck-next';
     var k = document.createElement('div'); k.className = 'ck-next-k'; var kt = document.createElement('span'); kt.textContent = String(d.kicker || ''); k.appendChild(kt);
-    var r = document.createElement('div'); r.className = 'ck-next-r';
-    var t = document.createElement('div'); t.className = 'ck-next-t'; t.setAttribute('aria-hidden', 'true'); t.textContent = String(d.tile || '');
-    var tx = document.createElement('div'); var n = document.createElement('div'); n.className = 'ck-next-n'; n.textContent = String(d.title || '');
-    var sb = document.createElement('div'); sb.className = 'ck-next-s'; sb.textContent = String(d.sub || ''); tx.appendChild(n); tx.appendChild(sb);
-    r.appendChild(t); r.appendChild(tx);
-    var b = document.createElement('button'); b.type = 'button'; b.className = 'ck-next-go'; b.textContent = '\u25B6 ' + String(d.cta || '');
-    b.onclick = function(){ go(String(d.to)); };
-    var m = document.createElement('button'); m.type = 'button'; m.className = 'ck-next-more'; m.textContent = String(d.more || '');
-    m.onclick = function(){ go('/kodi'); };
-    if (d.type === 'join') { kt.textContent = String((d.join && d.join.title) || ''); box.appendChild(k); }
-    else { box.appendChild(k); box.appendChild(r); box.appendChild(b); box.appendChild(m); }
-    // "Join our WhatsApp community" — under the next-puzzle card, or on its own
+    if (d.kicker) box.appendChild(k);
+    if (d.type === 'next') {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'ck-next-go'; b.textContent = '▶ ' + String(d.cta || '');
+      b.onclick = function(){ go(String(d.to)); }; box.appendChild(b);
+      if (d.more) { var m = document.createElement('button'); m.type = 'button'; m.className = 'ck-next-more'; m.textContent = String(d.more);
+        m.onclick = function(){ go('/kodi'); }; box.appendChild(m); }
+    }
     if (d.join && String(d.join.href).indexOf('https://chat.whatsapp.com/') === 0) {
-      var j = document.createElement('div'); j.className = 'ck-join' + (d.type === 'join' ? ' only' : '');
-      if (d.type !== 'join') { var jt = document.createElement('div'); jt.className = 'ck-join-t'; jt.textContent = String(d.join.title || ''); j.appendChild(jt); }
+      var j = document.createElement('div'); j.className = 'ck-join' + (d.type === 'join' && !d.kicker ? ' only' : '');
       var ja = document.createElement('a'); ja.className = 'ck-join-go'; ja.href = String(d.join.href); ja.target = '_blank'; ja.rel = 'noopener';
       ja.textContent = String(d.join.cta || ''); j.appendChild(ja); box.appendChild(j);
     }
-    var anchor = document.getElementById('dNote') || document.getElementById('dShareBox');
-    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(box, anchor.nextSibling);
+    var share = document.getElementById('dShareBox');
+    var anchor = document.getElementById('dNote');
+    if (share && share.parentNode) share.parentNode.insertBefore(box, share);
+    else if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(box, anchor.nextSibling);
     else {
       box.className += ' pin';
-      var x = document.createElement('button'); x.type = 'button'; x.className = 'ck-next-x'; x.textContent = '\u2715'; x.setAttribute('aria-label', String(d.close || 'Close'));
-      x.onclick = function(){ box.remove(); }; k.appendChild(x);
+      var x = document.createElement('button'); x.type = 'button'; x.className = 'ck-next-x'; x.textContent = '✕'; x.setAttribute('aria-label', String(d.close || 'Close'));
+      x.onclick = function(){ box.remove(); }; k.appendChild(x); if (!d.kicker) box.insertBefore(k, box.firstChild);
       (document.body || document.documentElement).appendChild(box);
-    }
-    // Fresh finish: the next puzzle starts by itself after a short countdown — only while the card
-    // is on screen and the page is visible; "थांबा" or tapping any other button stops it.
-    if (d.type === 'next' && d.auto > 0) {
-      var total = Math.round(d.auto), left = total, iv = null, stopped = false;
-      var cd = document.createElement('div');
-      var cdt = document.createElement('div'); cdt.className = 'ck-next-cdt';
-      var cbar = document.createElement('div'); cbar.className = 'ck-next-bar'; var cfill = document.createElement('div'); cbar.appendChild(cfill);
-      cd.appendChild(cdt); cd.appendChild(cbar);
-      box.insertBefore(cd, b);
-      var stay = document.createElement('button'); stay.type = 'button'; stay.className = 'ck-next-stay'; stay.textContent = String(d.stay || '');
-      box.insertBefore(stay, m);
-      m.style.display = 'none';
-      var digits = String(d.digits || ''); var numTxt = function(v){ return digits.length === 10 ? String(v).replace(/[0-9]/g, function(c){ return digits.charAt(+c); }) : String(v); };
-      var drawCd = function(){ cdt.textContent = String(d.autoText || '').replace('{s}', numTxt(left)); cfill.style.width = (left / total * 100) + '%'; };
-      var stopCd = function(){ stopped = true; if (iv) clearInterval(iv); iv = null; cd.remove(); stay.remove(); m.style.display = ''; };
-      var tickCd = function(){ if (stopped || document.hidden) return; left--; drawCd(); if (left <= 0) { stopCd(); go(String(d.to)); } };
-      var runCd = function(){ if (!iv && !stopped) iv = setInterval(tickCd, 1000); };
-      var pauseCd = function(){ if (iv) { clearInterval(iv); iv = null; } };
-      drawCd();
-      stay.onclick = stopCd;
-      try {
-        var io = new IntersectionObserver(function(es){ es.forEach(function(en){ if (en.intersectionRatio >= 0.5) runCd(); else pauseCd(); }); }, { threshold: [0, 0.5, 1] });
-        io.observe(box);
-      } catch(e) { runCd(); }
-      document.addEventListener('click', function(ev){
-        var el = ev.target && ev.target.closest ? ev.target.closest('a,button,[role=button]') : null;
-        if (el && !box.contains(el)) stopCd();
-      }, true);
     }
   });
   // Messages from the site, shown inside the puzzle so they are visible in full screen too.

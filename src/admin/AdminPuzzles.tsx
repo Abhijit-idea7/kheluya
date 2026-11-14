@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { istToday } from '@/lib/dates';
+import { addDays, istToday } from '@/lib/dates';
 import type { Puzzle } from '@/lib/types';
 import { Badge, btnPrimary, btnQuiet, Card } from '@/admin/ui';
 
@@ -15,14 +15,29 @@ export function statusOf(p: Pick<Puzzle, 'status' | 'live_date'>): { label: stri
   return { label: 'Live', tone: 'green' };
 }
 
-/** Today's WhatsApp-community post, with links tagged ?s=cm so Stats can count community taps. */
+const DAY_MR = ['रवि', 'सोम', 'मंगळ', 'बुध', 'गुरु', 'शुक्र', 'शनि'];
+const shortDay = (iso: string) => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  return `${DAY_MR[d.getUTCDay()]} ${d.getUTCDate()}/${d.getUTCMonth() + 1}`;
+};
+const typeName = (p: Puzzle) => (p as any).type?.name_mr ?? '';
+
+/**
+ * Today's WhatsApp-community post. The link always opens today's puzzle (kheluya.in), tagged ?s=cm so
+ * Stats can count community taps — the same link works every day.
+ */
 function CommunityPost({ rows }: { rows: Puzzle[] }) {
   const today = istToday();
   const [copied, setCopied] = useState(false);
-  const live = rows.filter((p) => p.status === 'live' && p.live_date === today).sort((a, b) => a.number - b.number);
-  if (!live.length) return null;
-  const lines = live.map((p) => `🧩 ${(p as any).type?.name_mr ?? p.name_mr}: kheluya.in/${p.number}?s=cm`);
-  const text = ['शुभ सकाळ! आजचे कोडे तयार आहे 🙏', '', ...lines, '', 'चला खेळूया!'].join('\n');
+  const todays = rows.filter((p) => p.status === 'live' && p.live_date === today).sort((a, b) => a.number - b.number)[0];
+  const text = [
+    'शुभ सकाळ! आजचे कोडे तयार आहे 🙏',
+    '',
+    todays ? `🧩 ${typeName(todays) || todays.name_mr}` : '🧩 आजचे कोडे',
+    '▶ kheluya.in/?s=cm',
+    '',
+    'चला खेळूया!',
+  ].join('\n');
   const copy = async () => {
     try { await navigator.clipboard.writeText(text); } catch {
       const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove();
@@ -36,8 +51,46 @@ function CommunityPost({ rows }: { rows: Puzzle[] }) {
         <button className={btnPrimary} onClick={copy}>{copied ? 'Copied ✓' : 'Copy post'}</button>
         <a className={btnQuiet} href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noreferrer">Open in WhatsApp</a>
       </div>
+      {!todays && <p className="mt-2 font-bold text-[#8A1C14]">No puzzle is set for today — the site is showing the most recent one. Set a puzzle for today below.</p>}
       <pre className="mt-3 whitespace-pre-wrap font-body text-lg bg-white rounded-xl border border-line p-3">{text}</pre>
-      <p className="mt-2 text-sm text-ink/55">These links end in ?s=cm, so Stats can show how many people came from the community. Edit the words freely, but keep the links as they are.</p>
+      <p className="mt-2 text-sm text-ink/55">The link always opens today’s puzzle, so it is the same every day. “?s=cm” lets Stats count people who came from the community.</p>
+    </Card>
+  );
+}
+
+/** The next 14 days: which puzzle comes out each day. One per day; warns about empty or double days. */
+function ReleaseCalendar({ rows }: { rows: Puzzle[] }) {
+  const today = istToday();
+  const days = Array.from({ length: 14 }, (_, i) => addDays(today, i));
+  const live = rows.filter((p) => p.status === 'live' && p.live_date);
+  const drafts = rows.filter((p) => p.status !== 'live' && p.live_date);
+  const empty = days.filter((d) => !live.some((p) => p.live_date === d)).length;
+  const doubles = days.filter((d) => live.filter((p) => p.live_date === d).length > 1).length;
+  return (
+    <Card className="mt-4">
+      <div className="flex flex-wrap items-baseline gap-2">
+        <h2 className="text-xl font-bold mr-auto">Next 14 days</h2>
+        <span className={`text-sm font-bold ${empty || doubles ? 'text-[#8A1C14]' : 'text-green'}`}>
+          {empty || doubles ? [empty ? `${empty} day(s) with no puzzle` : '', doubles ? `${doubles} day(s) with two` : ''].filter(Boolean).join(' · ') : 'Every day has one puzzle ✓'}
+        </span>
+      </div>
+      <p className="text-sm text-ink/55 mb-3">One puzzle a day is “today’s puzzle” for everyone. On a day with two, the lower number is shown; the other goes straight to “सर्व कोडी”.</p>
+      <ul className="grid gap-1.5 sm:grid-cols-2">
+        {days.map((d) => {
+          const ps = live.filter((p) => p.live_date === d).sort((a, b) => a.number - b.number);
+          const ds = drafts.filter((p) => p.live_date === d);
+          const tone = ps.length === 1 ? 'border-line bg-white' : ps.length === 0 ? 'border-[#B42318] bg-[#FDECEA]' : 'border-orange bg-orange-soft';
+          return (
+            <li key={d} className={`flex items-center gap-2 rounded-xl border-2 px-3 py-1.5 ${tone}`}>
+              <span className="w-24 shrink-0 font-bold">{d === today ? 'Today' : shortDay(d)}</span>
+              <span className="min-w-0 flex-1 truncate">
+                {ps.length ? ps.map((p) => `${p.number} · ${typeName(p) || p.name_mr}`).join('  +  ') : <b className="text-[#8A1C14]">no puzzle</b>}
+                {ds.length > 0 && <span className="text-ink/50"> (draft: {ds.map((p) => p.number).join(', ')})</span>}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
     </Card>
   );
 }
@@ -78,6 +131,7 @@ export default function AdminPuzzles() {
         ))}
       </div>
       {rows && <CommunityPost rows={rows} />}
+      {rows && <ReleaseCalendar rows={rows} />}
       {error && <p className="mt-4 font-bold text-[#8A1C14]">{error}</p>}
       {!rows ? (
         <p className="mt-6 animate-pulse">Loading…</p>
