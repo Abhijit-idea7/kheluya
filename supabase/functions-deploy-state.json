@@ -2,8 +2,8 @@
   "projectId": "72537786",
   "functions": {
     "push-send": {
-      "hasChanged": true,
-      "hash": "e8b2eea6d73bd5a5fb42a7921997130c26e4d5a91d2f8ed57188ff6139a4b7df"
+      "hasChanged": false,
+      "hash": "df67d7b3ce67c8d4c335e8b09443a2338fa83ac6871b90e337c8b6dd8b1b0f03"
     }
   }
 }
