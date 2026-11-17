@@ -453,5 +453,17 @@
   "stale": {
     "title": "Today's new puzzle is here!",
     "play": "Play today's puzzle"
+  },
+  "remind": {
+    "title": "Remind you of the new puzzle every morning?",
+    "sub": "A notification on your phone at {{when}}",
+    "later": "Not now",
+    "yes": "Yes, remind me",
+    "done": "Done! We'll remind you every day at {{when}}.",
+    "blocked": "Notifications are blocked on this phone. You can allow them in Chrome settings.",
+    "error": "Couldn't switch it on right now. Try again later from the menu.",
+    "menu": "Daily reminder",
+    "on": "On",
+    "off": "Off"
   }
 }

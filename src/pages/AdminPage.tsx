@@ -9,6 +9,7 @@ import AdminTypes from '@/admin/AdminTypes';
 import AdminStats from '@/admin/AdminStats';
 import AdminPeople from '@/admin/AdminPeople';
 import AdminSettings from '@/admin/AdminSettings';
+import AdminNotifications from '@/admin/AdminNotifications';
 
 type Gate = 'loading' | 'signedOut' | 'notAdmin' | 'admin';
 
@@ -74,6 +75,7 @@ export default function AdminPage() {
             <NavLink to="/admin/types" className={tab}>Puzzle types</NavLink>
             <NavLink to="/admin/stats" className={tab}>Stats</NavLink>
             <NavLink to="/admin/people" className={tab}>Subscribers &amp; messages</NavLink>
+            <NavLink to="/admin/notifications" className={tab}>Notifications</NavLink>
             <NavLink to="/admin/settings" className={tab}>Settings</NavLink>
           </nav>
           <button className={`${btnQuiet} ml-auto`} onClick={() => supabase!.auth.signOut()}>Sign out</button>
@@ -89,6 +91,7 @@ export default function AdminPage() {
         <Route path="stats" element={<AdminStats />} />
         <Route path="people" element={<AdminPeople />} />
         <Route path="settings" element={<AdminSettings />} />
+        <Route path="notifications" element={<AdminNotifications />} />
         <Route path="*" element={<Navigate to="/admin/puzzles" replace />} />
       </Routes>
     </Shell>

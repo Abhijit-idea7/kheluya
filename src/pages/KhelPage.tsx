@@ -6,6 +6,8 @@ import { getLivePuzzles, getPublicSettings, getPuzzleByNumber, getTimeStats } fr
 import { doneIds, markDone, touchPuzzle } from '@/lib/progress';
 import { randomUnplayed } from '@/lib/next';
 import MenuButton from '@/components/MenuButton';
+import ReminderSheet from '@/components/ReminderSheet';
+import { shouldAsk } from '@/lib/push';
 import { myTime, saveMyTime } from '@/lib/myTimes';
 import { formatDuration, istToday, mrDigits, prettyDate } from '@/lib/dates';
 import { publicFileUrl } from '@/lib/supabase';
@@ -43,6 +45,10 @@ export default function KhelPage({ num, today = false }: { num: number; today?: 
   const [rules, setRules] = useState(false);
   // Festival greeting (Admin → Settings): once each time a puzzle opens, while its dates last
   const { data: settings } = useAsync(() => getPublicSettings(), []);
+  const settingsRef = useRef<Record<string, unknown> | null>(null);
+  settingsRef.current = settings;
+  // Daily reminder: offered in a floating card after a fresh finish (see lib/push for when)
+  const [askRemind, setAskRemind] = useState(false);
   const fest = festivalFrom(settings);
   const [showFest, setShowFest] = useState(false);
   const festShownRef = useRef(false);
@@ -201,6 +207,7 @@ export default function KhelPage({ num, today = false }: { num: number; today?: 
         setNudge(false);
         markDone(pid);
         offerNext();
+        shouldAsk(settingsRef.current?.push_on === true).then((ok) => ok && setAskRemind(true));
         if (!startedSent) {
           startedSent = true;
           track({ puzzle_id: pid, session_id: sessionId, event: 'started' });
@@ -377,6 +384,8 @@ export default function KhelPage({ num, today = false }: { num: number; today?: 
           )}
         </div>
       )}
+
+      {askRemind && !nudge && <ReminderSheet time={settings?.push_time} onClose={() => setAskRemind(false)} />}
 
       {showFest && <FestivalGreeting text={fest.text} sound={fest.sound} onDone={endFest} />}
 
