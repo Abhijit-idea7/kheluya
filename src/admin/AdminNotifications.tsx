@@ -212,7 +212,7 @@ export default function AdminNotifications() {
           <div className="mt-3 overflow-x-auto">
             <table className="w-full text-left text-sm bg-white rounded-xl border border-line border-separate border-spacing-0 overflow-hidden">
               <thead className="bg-cream">
-                <tr>{['When', 'Kind', 'Message', 'Sent', 'Failed', 'Removed', 'Taps'].map((h) => <th key={h} className="px-3 py-2 font-bold">{h}</th>)}</tr>
+                <tr>{['When', 'Kind', 'Message', 'Sent', 'Failed', 'Removed', 'Taps that day'].map((h) => <th key={h} className="px-3 py-2 font-bold">{h}</th>)}</tr>
               </thead>
               <tbody>
                 {sum.log.map((l, i) => (
@@ -228,7 +228,7 @@ export default function AdminNotifications() {
                 ))}
               </tbody>
             </table>
-            <p className="mt-1 text-xs text-ink/50">Taps = people who opened the site from a notification that day. Removed = phones that no longer accept notifications.</p>
+            <p className="mt-1 text-xs text-ink/50">Taps that day = people who opened the site from any notification on that day (not just that message). Removed = phones that no longer accept notifications.</p>
           </div>
         )}
       </Card>

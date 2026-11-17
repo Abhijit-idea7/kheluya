@@ -15,7 +15,7 @@ self.addEventListener('push', (e) => {
     self.registration.showNotification(title, {
       body: d.body || '',
       icon: '/brand/icon-192.png',
-      tag: 'ck-daily',
+      tag: d.tag || 'ck-' + Date.now(), // each message its own slot, so none replaces another
       renotify: true,
       lang: 'mr',
       data: { url: d.url || '/?s=pn' },

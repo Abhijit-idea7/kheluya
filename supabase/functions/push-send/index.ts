@@ -71,7 +71,7 @@ const deps: Deps = {
       await webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
         JSON.stringify(payload),
-        { TTL: 6 * 3600, urgency: 'normal' },
+        { TTL: 6 * 3600, urgency: 'high' }, // high: Android shows it at once instead of holding it while the phone is idle
       );
       return { ok: true, gone: false };
     } catch (e) {

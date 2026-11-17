@@ -2,7 +2,7 @@
 
 export type Sub = { id: string; endpoint: string; p256dh: string; auth: string };
 export type SendResult = { ok: boolean; gone: boolean };
-export type Payload = { title: string; body: string; url: string };
+export type Payload = { title: string; body: string; url: string; tag: string };
 
 export interface Deps {
   /** India date and clock time now, e.g. { day: '2026-11-18', hhmm: '07:15' } */
@@ -57,7 +57,7 @@ export async function runTick(d: Deps) {
   const body = fill(String((await d.setting('push_body')) ?? '{name} — चला खेळूया!'), name);
   const logId = await d.claimDaily(day, title, body);
   if (logId == null) return { skipped: 'done' };
-  const r = await sendAll(d, await d.activeSubs(), { title, body, url: '/?s=pn' });
+  const r = await sendAll(d, await d.activeSubs(), { title, body, url: '/?s=pn', tag: `ck-daily-${day}` });
   await d.finishLog(logId, r.sent, r.failed, r.removed);
   return { sent: r };
 }
@@ -67,7 +67,8 @@ export async function runManual(d: Deps, kind: 'test' | 'now', title: string, bo
   const subs = await d.activeSubs(kind === 'test' ? endpoint : undefined);
   if (kind === 'test' && !subs.length) return { error: 'This phone is not switched on for notifications yet.' };
   const logId = await d.addLog(kind, title, body);
-  const r = await sendAll(d, subs, { title, body, url: '/?s=pn' });
+  // Its own tag: a new message never silently replaces one already on the phone
+  const r = await sendAll(d, subs, { title, body, url: '/?s=pn', tag: `ck-${kind}-${logId}` });
   await d.finishLog(logId, r.sent, r.failed, r.removed);
   return { sent: r };
 }
