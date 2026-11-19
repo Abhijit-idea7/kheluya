@@ -798,23 +798,48 @@ function SimpleStats() {
   // India clock time now, e.g. "13:20:05" — yesterday is counted only up to this time, for a fair comparison
   const nowIst = new Date(Date.now() + 330 * 60000).toISOString().slice(11, 19);
   const nowLabel = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit' });
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let alive = true;
-    Promise.all([
-      supabase!.rpc('admin_simple_stats', { p_from: from, p_to: today }),
-      supabase!.rpc('admin_simple_stats', { p_from: addDays(today, -1), p_to: addDays(today, -1), p_cutoff: nowIst }),
-    ]).then(([a, b]) => {
+    setErr('');
+    const fetchBoth = () =>
+      Promise.all([
+        supabase!.rpc('admin_simple_stats', { p_from: from, p_to: today }),
+        supabase!.rpc('admin_simple_stats', { p_from: addDays(today, -1), p_to: addDays(today, -1), p_cutoff: nowIst }),
+      ]);
+    (async () => {
+      let [a, b] = await fetchBoth();
+      // A slow moment on the database: wait a little and try once more before showing anything
+      if (a.error || b.error) {
+        await new Promise((r) => setTimeout(r, 1500));
+        if (!alive) return;
+        [a, b] = await fetchBoth();
+      }
       if (!alive) return;
       const e = a.error || b.error;
-      if (e) return setErr(e.message.includes('admin_simple_stats') ? 'Stats: the new database step has not been applied yet.' : e.message);
+      if (e) {
+        return setErr(
+          e.message.includes('admin_simple_stats')
+            ? 'Stats: the new database step has not been applied yet.'
+            : /timeout|cancel/i.test(e.message)
+              ? 'The stats took too long to load this time.'
+              : e.message,
+        );
+      }
       setDays(((a.data ?? []) as any[]).map(toDay6));
       setCmp(((b.data ?? []) as any[]).map(toDay6)[0] ?? null);
-    });
+    })();
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [attempt]);
 
-  if (err) return <p className="font-bold text-[#8A1C14]">{err}</p>;
+  if (err)
+    return (
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="font-bold text-[#8A1C14]">{err}</p>
+        <button className={btnQuiet} onClick={() => { setDays(null); setAttempt((n) => n + 1); }}>Try again</button>
+      </div>
+    );
   if (!days) return <p className="animate-pulse">Loading…</p>;
   const t = days.find((d) => d.day === today);
   const yFull = days.find((d) => d.day === addDays(today, -1));
