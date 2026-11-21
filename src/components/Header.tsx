@@ -5,6 +5,8 @@ import { readTextLarge, writeTextLarge, applyTextLargeToDocument } from '@/utils
 import { LANG_STORAGE_KEY } from '@/i18n';
 import { navItems } from '@/components/navItems';
 import MenuButton from '@/components/MenuButton';
+import { ShoppingCart } from 'lucide-react';
+import { useCart } from '@/lib/shop';
 
 
 export default function Header() {
@@ -27,6 +29,7 @@ export default function Header() {
     }
   };
 
+  const cartCount = useCart().reduce((n, l) => n + l.qty, 0);
   const sq = 'min-h-[3rem] min-w-[3rem] px-2.5 rounded-xl border-2 border-ink font-heading font-extrabold leading-none';
 
   return (
@@ -55,6 +58,12 @@ export default function Header() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 shrink-0">
+          {cartCount > 0 && (
+            <Link to="/pishvi" className={`${sq} relative grid place-items-center bg-orange-soft`} aria-label={t('shop.cart')}>
+              <ShoppingCart size={24} strokeWidth={2.6} aria-hidden="true" />
+              <span className="absolute -top-2 -right-2 min-w-[1.5rem] h-6 px-1 rounded-full bg-[#B42318] text-white text-sm font-bold grid place-items-center">{cartCount}</span>
+            </Link>
+          )}
           <button onClick={toggleLang} className={`${sq} hidden lg:block bg-paper text-base font-bold`} aria-label={t('lang.label')}>
             {i18n.language === 'mr' ? t('menu.english') : t('menu.marathi')}
           </button>

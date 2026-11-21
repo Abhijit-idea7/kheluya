@@ -24,6 +24,7 @@ import {
 } from '@/pages/DhoranPages';
 import NotFoundPage from '@/pages/NotFoundPage';
 import ShortNumberRedirect from '@/pages/ShortNumberRedirect';
+import InvoicePage from '@/pages/InvoicePage';
 import StaleGuard from '@/components/StaleGuard';
 
 const AdminPage = lazy(() => import('@/pages/AdminPage'));
@@ -47,6 +48,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<TodayPage />} />
         <Route path="/khel/:n" element={<KhelRoute />} />
+        <Route path="/order/:id/invoice" element={<InvoicePage />} />
         <Route path="/admin/*" element={<Suspense fallback={<p className="p-6">Loading…</p>}><AdminPage /></Suspense>} />
         <Route path="/:n" element={<ShortNumberRedirect />} />
         <Route element={<Layout />}>

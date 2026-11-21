@@ -1,12 +1,134 @@
+import { useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import PageShell from '@/components/PageShell';
+import { ArrowLeft, Minus, Plus, Truck, Wallet } from 'lucide-react';
+import { getPublicSettings } from '@/lib/api';
+import { useAsync } from '@/lib/useAsync';
+import { addToCart, getCatalog, imageUrl, money, pickLang, readCart, setQty } from '@/lib/shop';
+import Illustration from '@/components/Illustration';
+import { mrDigits } from '@/lib/dates';
 
+/** One product: pictures, price, description and details, quantity, add to cart / buy now. */
 export default function DukanProductPage() {
-  const { t } = useTranslation();
+  const { slug } = useParams();
+  const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language === 'en' ? 'en' : 'mr';
+  const { data, loading } = useAsync(async () => {
+    const [s, c] = await Promise.all([getPublicSettings(), getCatalog()]);
+    return { settings: s, product: c.products.find((p) => p.slug === slug) ?? null };
+  }, [slug]);
+  const [img, setImg] = useState(0);
+  const [qty, setQ] = useState(1);
+  const [added, setAdded] = useState(false);
+
+  if (loading) return <div className="max-w-site mx-auto px-4 py-10"><div className="sticker h-96 animate-pulse" aria-hidden="true" /></div>;
+  const p = data?.product;
+  const open = data?.settings.shop_selling === true;
+  if (!p) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-10 text-center">
+        <Illustration name="confused" alt="" className="w-48 mx-auto mb-4" />
+        <p className="text-xl">{t('shop.notFound')}</p>
+        <Link to="/dukan" className="btn btn-primary mt-4">{t('shop.back')}</Link>
+      </div>
+    );
+  }
+  const can = open && p.in_stock && !p.coming_soon;
+  const num = (v: number) => (lang === 'mr' ? mrDigits(v) : String(v));
+  const add = () => {
+    addToCart(p.id, qty, p.max_per_order);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1800);
+  };
+  const buyNow = () => {
+    const inCart = readCart().find((l) => l.id === p.id)?.qty ?? 0;
+    if (inCart < qty) setQty(p.id, qty, p.max_per_order);
+    navigate('/checkout');
+  };
+  const specs = p.specs.filter((s) => (lang === 'en' ? s.label_en || s.label_mr : s.label_mr) && (s.value_mr || s.value_en));
+
   return (
-    <PageShell
-      title={t('pages.dukanProduct.heading')}
-      description={t('pages.dukanProduct.description')}
-    />
+    <div className="max-w-site mx-auto px-4 sm:px-5 py-4 sm:py-8">
+      <Link to="/dukan" className="inline-flex items-center gap-2 min-h-[2.75rem] mb-2 font-heading font-bold text-lg text-ink/75 hover:text-ink">
+        <ArrowLeft size={20} strokeWidth={2.6} aria-hidden="true" />
+        {t('shop.back')}
+      </Link>
+      <div className="grid gap-6 lg:grid-cols-2 items-start">
+        <div>
+          <div className="sticker overflow-hidden bg-white">
+            {p.images[img] ? (
+              <img src={imageUrl(p.images[img])} alt={pickLang(p, 'name', lang)} className="w-full aspect-square object-contain" />
+            ) : (
+              <Illustration name="book" alt="" eager className="w-full aspect-square object-cover" />
+            )}
+          </div>
+          {p.images.length > 1 && (
+            <div className="mt-3 flex gap-2 overflow-x-auto">
+              {p.images.map((src, i) => (
+                <button key={src} onClick={() => setImg(i)} aria-label={`${i + 1}`} className={`shrink-0 w-20 h-20 rounded-xl border-2 overflow-hidden bg-white ${i === img ? 'border-ink' : 'border-line'}`}>
+                  <img src={imageUrl(src)} alt="" className="w-full h-full object-contain" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <h1 className="text-heading-lg leading-tight">{pickLang(p, 'name', lang)}</h1>
+          {pickLang(p, 'short', lang) && <p className="text-xl leading-snug text-ink/85">{pickLang(p, 'short', lang)}</p>}
+          <div className="flex items-baseline gap-3 flex-wrap">
+            <span className="font-heading font-extrabold text-[2.2rem]">{money(p.price_paise, lang)}</span>
+            {p.mrp_paise && p.mrp_paise > p.price_paise && (
+              <>
+                <s className="text-xl text-ink/55">{money(p.mrp_paise, lang)}</s>
+                <span className="text-lg font-bold text-green">{t('shop.save', { amt: money(p.mrp_paise - p.price_paise, lang) })}</span>
+              </>
+            )}
+          </div>
+          {p.coming_soon && <p className="text-xl font-bold">{t('shop.soon')}</p>}
+          {!p.coming_soon && !p.in_stock && <p className="text-xl font-bold text-[#B42318]">{t('shop.out')}</p>}
+          {can && p.few_left && <p className="text-lg font-bold text-[#B42318]">{t('shop.few')}</p>}
+
+          {can && (
+            <>
+              <div className="flex items-center gap-3">
+                <span className="text-lg font-bold">{t('shop.qty')}</span>
+                <button type="button" aria-label="-" onClick={() => setQ(Math.max(1, qty - 1))} className="grid place-items-center h-12 w-12 rounded-xl border-2 border-ink bg-paper">
+                  <Minus size={22} strokeWidth={3} aria-hidden="true" />
+                </button>
+                <span className="min-w-[2.5rem] text-center font-heading font-extrabold text-2xl tabular-nums">{num(qty)}</span>
+                <button type="button" aria-label="+" onClick={() => setQ(Math.min(p.max_per_order, qty + 1))} className="grid place-items-center h-12 w-12 rounded-xl border-2 border-ink bg-paper">
+                  <Plus size={22} strokeWidth={3} aria-hidden="true" />
+                </button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button type="button" onClick={add} className={`btn w-full ${added ? 'btn-whatsapp' : 'btn-quiet'}`}>{added ? t('shop.added') : t('shop.add')}</button>
+                <button type="button" onClick={buyNow} className="btn btn-primary w-full">{t('shop.buyNow')}</button>
+              </div>
+            </>
+          )}
+
+          <ul className="grid gap-2 text-lg">
+            <li className="flex items-center gap-2"><Truck size={22} strokeWidth={2.4} aria-hidden="true" />{t('shop.freeDelivery')}</li>
+            {data?.settings.cash_on_delivery === true && <li className="flex items-center gap-2"><Wallet size={22} strokeWidth={2.4} aria-hidden="true" />{t('shop.codAvail')}</li>}
+          </ul>
+
+          {pickLang(p, 'description', lang) && <p className="text-lg leading-relaxed whitespace-pre-line">{pickLang(p, 'description', lang)}</p>}
+          {specs.length > 0 && (
+            <table className="w-full text-lg border-2 border-line rounded-xl overflow-hidden border-separate border-spacing-0 bg-white">
+              <tbody>
+                {specs.map((s, i) => (
+                  <tr key={i}>
+                    <th className="text-left font-bold px-3 py-2 border-t border-line first:border-t-0 w-2/5 align-top">{lang === 'en' ? s.label_en || s.label_mr : s.label_mr}</th>
+                    <td className="px-3 py-2 border-t border-line">{lang === 'en' ? s.value_en || s.value_mr : s.value_mr}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

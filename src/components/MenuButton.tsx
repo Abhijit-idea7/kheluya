@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Bell, Grid2x2, Menu, Play, ShoppingBag, Star, X } from 'lucide-react';
+import { Bell, Grid2x2, Menu, Package, Play, ShoppingBag, ShoppingCart, Star, X } from 'lucide-react';
+import { savedOrders, useCart } from '@/lib/shop';
 import { readTextLarge, writeTextLarge, applyTextLargeToDocument } from '@/utils/textSize';
 import { LANG_STORAGE_KEY } from '@/i18n';
 import { useCommunityLink } from '@/lib/community';
@@ -91,11 +92,15 @@ export default function MenuButton({
   };
 
   const sq = 'min-h-[3rem] min-w-[3rem] px-2.5 rounded-xl border-2 border-ink font-heading font-extrabold leading-none';
+  const cartCount = useCart().reduce((n, l) => n + l.qty, 0);
+  const hasOrders = open && savedOrders().length > 0;
   const big = [
     { to: '/', label: t('today.title'), Icon: Play },
     { to: '/kodi', label: t('nav.kodi'), Icon: Grid2x2 },
     { to: '/majha-khel', label: t('nav.mine'), Icon: Star },
     { to: '/dukan', label: t('nav.dukan'), Icon: ShoppingBag },
+    ...(cartCount > 0 ? [{ to: '/pishvi', label: `${t('shop.menuCart')} (${cartCount})`, Icon: ShoppingCart }] : []),
+    ...(hasOrders ? [{ to: '/majhi-order', label: t('shop.menuOrders'), Icon: Package }] : []),
   ];
   const small = [
     { to: '/madat', label: t('menu.how') },
