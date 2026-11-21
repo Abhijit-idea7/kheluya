@@ -902,6 +902,94 @@ function SimpleStats() {
       >
         Download CSV
       </button>
+      <Sources />
+    </div>
+  );
+}
+
+// ---------- where players came from ----------
+type Src = { day: string; players: number; community: number; shares: number; facebook: number; facebook_ads: number; instagram: number; instagram_ads: number; notifications: number; other_links: number; direct: number };
+const SRC_NUM = ['players', 'community', 'shares', 'facebook', 'facebook_ads', 'instagram', 'instagram_ads', 'notifications', 'other_links', 'direct'] as const;
+
+function Sources() {
+  const today = istToday();
+  const from = addDays(today, -13);
+  const [rows, setRows] = useState<Src[] | null>(null);
+  const [err, setErr] = useState('');
+  const [copied, setCopied] = useState('');
+  useEffect(() => {
+    let alive = true;
+    supabase!.rpc('admin_sources', { p_from: from, p_to: today }).then(({ data, error }) => {
+      if (!alive) return;
+      if (error) return setErr(error.message.includes('admin_sources') ? 'Sources: the new database step has not been applied yet.' : error.message);
+      setRows(((data ?? []) as any[]).map((r) => {
+        const o: any = { day: r.day };
+        SRC_NUM.forEach((k) => (o[k] = Number(r[k]) || 0));
+        return o as Src;
+      }));
+    });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const copy = async (text: string) => {
+    try { await navigator.clipboard.writeText(text); } catch { /* ignore */ }
+    setCopied(text);
+    setTimeout(() => setCopied(''), 2000);
+  };
+  const short = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-IN', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
+  const withAds = (all: number, ads: number) => (ads ? `${n(all)} (ads ${n(ads)})` : n(all));
+  const cols: [string, (r: Src) => string][] = [
+    ['Players', (r) => n(r.players)],
+    ['WhatsApp community', (r) => n(r.community)],
+    ['Player shares', (r) => n(r.shares)],
+    ['Facebook', (r) => withAds(r.facebook, r.facebook_ads)],
+    ['Instagram', (r) => withAds(r.instagram, r.instagram_ads)],
+    ['Reminders', (r) => n(r.notifications)],
+    ['Direct', (r) => n(r.direct)],
+  ];
+  const links = ['https://chalakheluya.com/?s=fbad', 'https://chalakheluya.com/?s=igad'];
+
+  return (
+    <div className="mt-8">
+      <h3 className="text-xl font-bold">Where players came from</h3>
+      <p className="text-sm text-ink/60 mb-2">
+        People per day, by how they reached the site. Facebook and Instagram are recognised even without a tag; ads are counted separately when
+        the ad uses these links:
+      </p>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {links.map((l) => (
+          <button key={l} className={`${btnQuiet} !py-1 !text-sm`} onClick={() => copy(l)} title="Copy link">
+            {copied === l ? 'Copied ✓' : l.replace('https://', '')} {l.includes('fbad') ? '— Facebook ads' : '— Instagram ads'}
+          </button>
+        ))}
+      </div>
+      {err ? (
+        <p className="font-bold text-[#8A1C14]">{err}</p>
+      ) : !rows ? (
+        <p className="animate-pulse">Loading…</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm bg-white rounded-xl border border-line border-separate border-spacing-0 overflow-hidden">
+            <thead className="bg-cream">
+              <tr>
+                <th className="px-3 py-2 font-bold">Day</th>
+                {cols.map(([h]) => <th key={h} className="px-3 py-2 font-bold whitespace-nowrap">{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {[...rows].reverse().map((r) => (
+                <tr key={r.day} className={r.day === today ? 'bg-orange-soft/60' : ''}>
+                  <td className="px-3 py-1.5 border-t border-line whitespace-nowrap font-bold">{short(r.day)}{r.day === today ? ' (so far)' : ''}</td>
+                  {cols.map(([h, f]) => <td key={h} className="px-3 py-1.5 border-t border-line tabular-nums whitespace-nowrap">{f(r)}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-1 text-xs text-ink/50">
+            Direct = came without a link (typed the address, home-screen icon, bookmark). Someone who came two ways in a day counts once in each.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

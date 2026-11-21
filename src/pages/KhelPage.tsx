@@ -12,7 +12,7 @@ import { myTime, saveMyTime } from '@/lib/myTimes';
 import { formatDuration, istToday, mrDigits, prettyDate } from '@/lib/dates';
 import { publicFileUrl } from '@/lib/supabase';
 import { preparePuzzleHtml } from '@/lib/bridge';
-import { newSessionId, readRef, track, trackArrival, type Channel } from '@/lib/track';
+import { newSessionId, track, trackArrival, visitSource, type Channel } from '@/lib/track';
 import { shortLink } from '@/lib/share';
 import { makeChallengeCard, type ResultCard } from '@/lib/shareCard';
 import { useCommunityLink } from '@/lib/community';
@@ -96,7 +96,7 @@ export default function KhelPage({ num, today = false }: { num: number; today?: 
     if (!puzzle || phase !== 'ready') return;
     if (new URLSearchParams(search).get('preview') === '1') return; // admin preview: not counted
     const pid = puzzle.id;
-    const ref = readRef(search);
+    const ref = visitSource(search);
     track({ puzzle_id: pid, session_id: sessionId, event: 'opened', ref });
     trackArrival(pid, sessionId, ref);
     const from = new URLSearchParams(search).get('from');

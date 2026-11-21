@@ -31,11 +31,42 @@ export function newSessionId(): string {
   return uuid();
 }
 
-const REF_TO_CHANNEL: Record<string, string> = { wa: 'wa', fb: 'fb', ig: 'ig', cp: 'cp', sh: 'sh', cm: 'cm', pn: 'pn' };
-/** The ?s= tag on a shared link, if any. */
+/**
+ * Where a visit came from, as a short tag stored with the "arrived" event:
+ *   wa fb ig cp sh  a player's share (the share buttons add ?s=…)
+ *   cm              the WhatsApp community post        pn    a reminder notification
+ *   fbad igad       Facebook / Instagram ads (put ?s=fbad or ?s=igad on the ad link)
+ *   fbx  igx        Facebook / Instagram without a tag (posts, profile links) — from the browser's referrer or fbclid
+ *   other           any other ?s= tag
+ */
+const KNOWN_TAGS = new Set(['wa', 'fb', 'ig', 'cp', 'sh', 'cm', 'pn', 'fbad', 'igad']);
+
+/** The ?s= tag on a link, if any. */
 export function readRef(search: string): string | null {
   const s = new URLSearchParams(search).get('s');
-  return s && REF_TO_CHANNEL[s] ? s : s ? 'other' : null;
+  return s && KNOWN_TAGS.has(s) ? s : s ? 'other' : null;
+}
+
+// Only the page the visitor landed on can say where they came from (later pages in the same visit keep the referrer).
+let landingSeen = false;
+/** The source of this visit: the ?s= tag, else Facebook / Instagram recognised on the first page only. */
+export function visitSource(search: string): string | null {
+  const tagged = readRef(search);
+  const first = !landingSeen;
+  landingSeen = true;
+  if (tagged || !first) return tagged;
+  let ref = '';
+  try {
+    ref = document.referrer || '';
+  } catch {
+    ref = '';
+  }
+  if (/(^|\.)instagram\.com/i.test(ref.replace(/^https?:\/\//, '').split('/')[0])) return 'igx';
+  if (/(^|\.)(facebook\.com|fb\.com|fb\.me)$/i.test(ref.replace(/^https?:\/\//, '').split('/')[0])) return 'fbx';
+  const q = new URLSearchParams(search);
+  if (q.get('utm_source')?.toLowerCase().includes('insta') || q.has('igshid') || q.has('igsh')) return 'igx';
+  if (q.has('fbclid') || q.get('utm_source')?.toLowerCase().includes('fac')) return 'fbx';
+  return null;
 }
 
 type EventRow = {
