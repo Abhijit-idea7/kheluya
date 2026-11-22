@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Minus, Plus, ShoppingCart, Truck, Wallet } from 'lucide-react';
-import { getPublicSettings } from '@/lib/api';
+import { addSubscriber, getPublicSettings } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
 import { addToCart, getCatalog, imageUrl, money, pickLang, readCart, setQty } from '@/lib/shop';
 import Illustration from '@/components/Illustration';
 import { mrDigits } from '@/lib/dates';
+import FormField, { inputClass } from '@/components/FormField';
 
 /** One product: pictures, price, description and details, quantity, add to cart / buy now. */
 export default function DukanProductPage() {
@@ -34,7 +35,8 @@ export default function DukanProductPage() {
       </div>
     );
   }
-  const can = open && p.in_stock && !p.coming_soon;
+  const soon = p.coming_soon || !open;
+  const can = !soon && p.in_stock;
   const num = (v: number) => (lang === 'mr' ? mrDigits(v) : String(v));
   const add = () => {
     addToCart(p.id, qty, p.max_per_order);
@@ -87,8 +89,9 @@ export default function DukanProductPage() {
               </>
             )}
           </div>
-          {p.coming_soon && <p className="text-xl font-bold">{t('shop.soon')}</p>}
-          {!p.coming_soon && !p.in_stock && <p className="text-xl font-bold text-[#B42318]">{t('shop.out')}</p>}
+          {soon && <p className="self-start rounded-full bg-orange-soft border-2 border-ink px-3 py-0.5 text-xl font-bold">{t('shop.soon')}</p>}
+          {soon && <NotifyMe productName={p.name_mr} slug={p.slug} />}
+          {!soon && !p.in_stock && <p className="text-xl font-bold text-[#B42318]">{t('shop.out')}</p>}
           {can && p.few_left && <p className="text-lg font-bold text-[#B42318]">{t('shop.few')}</p>}
 
           {can && (
@@ -145,5 +148,47 @@ export default function DukanProductPage() {
       )}
       {added && <p role="status" className="lg:hidden fixed left-3 right-3 bottom-24 z-30 rounded-2xl bg-green text-white text-center font-bold text-lg py-2">{t('shop.added')}</p>}
     </div>
+  );
+}
+
+/** For a product not on sale yet: leave a WhatsApp number to hear when it is. Saved with the subscribers (interest: book). */
+function NotifyMe({ productName, slug }: { productName: string; slug: string }) {
+  const { t } = useTranslation();
+  const key = `ck-notify-${slug}`;
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [state, setState] = useState<'idle' | 'saving' | 'done' | 'bad' | 'error'>(() => {
+    try { return localStorage.getItem(key) ? 'done' : 'idle'; } catch { return 'idle'; }
+  });
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 10 || digits.length > 13) return setState('bad');
+    setState('saving');
+    try {
+      await addSubscriber({ name: name.trim(), phone: digits, city: '', interest: 'book', source_page: `/dukan/${slug}`, note: productName });
+      try { localStorage.setItem(key, '1'); } catch { /* private mode */ }
+      setState('done');
+    } catch {
+      setState('error');
+    }
+  };
+  if (state === 'done') return <p className="rounded-2xl bg-green-soft border-2 border-green px-4 py-3 text-lg font-semibold">{t('shop.notifyDone')}</p>;
+  return (
+    <form onSubmit={submit} className="sticker p-4 flex flex-col gap-3">
+      <div>
+        <h2 className="text-heading-sm">{t('shop.notifyTitle')}</h2>
+        <p className="text-lg text-ink/75">{t('shop.notifyBody')}</p>
+      </div>
+      <FormField label={t('shop.co.phone')}>
+        <input className={inputClass} value={phone} onChange={(e) => { setPhone(e.target.value); if (state === 'bad') setState('idle'); }} inputMode="numeric" autoComplete="tel" placeholder="98XXXXXXXX" />
+      </FormField>
+      <FormField label={t('shop.notifyName')}>
+        <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+      </FormField>
+      {state === 'bad' && <p role="alert" className="text-lg font-bold text-[#B42318]">{t('shop.notifyBad')}</p>}
+      {state === 'error' && <p role="alert" className="text-lg font-bold text-[#B42318]">{t('shop.notifyErr')}</p>}
+      <button type="submit" disabled={state === 'saving'} className="btn btn-primary w-full">{state === 'saving' ? '…' : t('shop.notifyBtn')}</button>
+    </form>
   );
 }

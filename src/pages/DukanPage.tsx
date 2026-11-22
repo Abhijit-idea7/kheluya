@@ -6,11 +6,10 @@ import { getPublicSettings } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
 import { addToCart, getCatalog, imageUrl, money, pickLang, useCart, type Product } from '@/lib/shop';
 import Illustration from '@/components/Illustration';
-import DukanComingSoon from '@/pages/DukanComingSoon';
 import { trackSite } from '@/lib/track';
 import { useEffect } from 'react';
 
-/** The shop: products when selling is switched on in Admin; the "tell me when it's ready" page otherwise. */
+/** The shop: every active product. Until selling is switched on in Admin (or for a product marked coming soon), cards show "coming soon" instead of add-to-cart. */
 export default function DukanPage() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language === 'en' ? 'en' : 'mr';
@@ -22,11 +21,21 @@ export default function DukanPage() {
   const cart = useCart();
   const count = cart.reduce((n, l) => n + l.qty, 0);
   useEffect(() => {
-    if (data?.open) trackSite('shop_view');
-  }, [data?.open]);
+    if (data) trackSite('shop_view');
+  }, [data]);
 
   if (loading) return <div className="max-w-site mx-auto px-4 py-10"><div className="sticker h-72 animate-pulse" aria-hidden="true" /></div>;
-  if (!data?.open || !data.products.length) return <DukanComingSoon />;
+  const open = data?.open === true;
+  if (!data?.products.length) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-10 text-center">
+        <Illustration name="book" alt="" eager className="w-44 mx-auto mb-4" />
+        <h1 className="text-heading-lg">{t('shop.title')}</h1>
+        <p className="mt-2 text-xl">{t('shop.empty')}</p>
+        <Link to="/" className="btn btn-primary mt-5">{t('shop.playToday')}</Link>
+      </div>
+    );
+  }
 
   const cats = data.categories.filter((c) => data.products.some((p) => p.category_id === c.id));
   const shown = cat ? data.products.filter((p) => p.category_id === cat) : data.products;
@@ -38,7 +47,7 @@ export default function DukanPage() {
           <h1 className="text-heading-lg">{t('shop.title')}</h1>
           <p className="text-lg text-ink/75">{t('shop.sub')}</p>
         </div>
-        {count > 0 && (
+        {open && count > 0 && (
           <Link to="/pishvi" className="btn btn-primary">
             <ShoppingCart size={22} strokeWidth={2.6} aria-hidden="true" />
             {t('shop.viewCart', { n: lang === 'mr' ? count.toLocaleString('mr-IN') : count })}
@@ -68,17 +77,18 @@ export default function DukanPage() {
 
       <ul className="mt-5 grid gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {shown.map((p) => (
-          <ProductCard key={p.id} p={p} lang={lang} />
+          <ProductCard key={p.id} p={p} lang={lang} open={open} />
         ))}
       </ul>
     </div>
   );
 }
 
-function ProductCard({ p, lang }: { p: Product; lang: 'mr' | 'en' }) {
+function ProductCard({ p, lang, open }: { p: Product; lang: 'mr' | 'en'; open: boolean }) {
   const { t } = useTranslation();
   const [added, setAdded] = useState(false);
-  const can = p.in_stock && !p.coming_soon;
+  const soon = p.coming_soon || !open;
+  const can = !soon && p.in_stock;
   const add = () => {
     addToCart(p.id, 1, p.max_per_order);
     setAdded(true);
@@ -101,7 +111,7 @@ function ProductCard({ p, lang }: { p: Product; lang: 'mr' | 'en' }) {
           <span className="font-heading font-extrabold text-2xl">{money(p.price_paise, lang)}</span>
           {p.mrp_paise && p.mrp_paise > p.price_paise && <s className="text-base sm:text-lg text-ink/55">{money(p.mrp_paise, lang)}</s>}
         </div>
-        {p.coming_soon ? (
+        {soon ? (
           <span className="self-start rounded-full bg-orange-soft border-2 border-ink px-3 text-base font-bold">{t('shop.soon')}</span>
         ) : !p.in_stock ? (
           <span className="self-start rounded-full bg-cream border-2 border-line px-3 text-base font-bold text-ink/70">{t('shop.out')}</span>

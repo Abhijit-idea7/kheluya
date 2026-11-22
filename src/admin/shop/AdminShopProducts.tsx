@@ -223,7 +223,7 @@ function ProductEditor({ p: start, cats, onDone }: { p: Prod; cats: Cat[]; onDon
 
       <Card className="grid gap-2">
         <label className="flex items-center gap-3 text-lg"><input type="checkbox" className="h-6 w-6" checked={p.is_active} onChange={(e) => set('is_active', e.target.checked)} />Show in the shop</label>
-        <label className="flex items-center gap-3 text-lg"><input type="checkbox" className="h-6 w-6" checked={p.coming_soon} onChange={(e) => set('coming_soon', e.target.checked)} />Coming soon (shown, but cannot be ordered yet)</label>
+        <label className="flex items-center gap-3 text-lg"><input type="checkbox" className="h-6 w-6" checked={p.coming_soon} onChange={(e) => setP({ ...p, coming_soon: e.target.checked, is_active: e.target.checked ? true : p.is_active })} />Coming soon (shown in the shop, but cannot be ordered yet)</label>
       </Card>
 
       {msg && <p className="font-bold text-[#8A1C14]">{msg}</p>}

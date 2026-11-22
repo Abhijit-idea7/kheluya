@@ -579,6 +579,15 @@
       "notFound": "No such order. Please check the number and phone."
     },
     "menuCart": "Cart",
-    "menuOrders": "My orders"
+    "menuOrders": "My orders",
+    "empty": "The shop opens soon. Meanwhile, play today's puzzle!",
+    "playToday": "Play today's puzzle",
+    "notifyTitle": "We'll tell you when it's ready",
+    "notifyBody": "Leave your WhatsApp number and we'll let you know when it goes on sale.",
+    "notifyName": "Name (optional)",
+    "notifyBtn": "Notify me",
+    "notifyDone": "Thank you! We'll message you on WhatsApp as soon as it's available.",
+    "notifyBad": "Please enter a 10-digit mobile number.",
+    "notifyErr": "Couldn't save right now. Please try again in a little while."
   }
 }
