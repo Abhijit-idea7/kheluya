@@ -12,17 +12,18 @@ export default function AdminShop() {
     <div className="grid gap-5">
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="text-3xl mr-4">Shop</h1>
-        <NavLink to="orders" className={tab}>Orders</NavLink>
-        <NavLink to="products" className={tab}>Products</NavLink>
-        <NavLink to="customers" className={tab}>Customers</NavLink>
-        <NavLink to="settings" className={tab}>Shop settings</NavLink>
+        <NavLink to="/admin/shop/orders" className={tab}>Orders</NavLink>
+        <NavLink to="/admin/shop/products" className={tab}>Products</NavLink>
+        <NavLink to="/admin/shop/customers" className={tab}>Customers</NavLink>
+        <NavLink to="/admin/shop/settings" className={tab}>Shop settings</NavLink>
       </div>
       <Routes>
-        <Route index element={<Navigate to="orders" replace />} />
+        <Route index element={<Navigate to="/admin/shop/orders" replace />} />
         <Route path="orders" element={<AdminShopOrders />} />
         <Route path="products" element={<AdminShopProducts />} />
         <Route path="customers" element={<AdminShopCustomers />} />
         <Route path="settings" element={<AdminShopSettings />} />
+        <Route path="*" element={<Navigate to="/admin/shop/orders" replace />} />
       </Routes>
     </div>
   );
