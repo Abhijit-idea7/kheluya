@@ -124,9 +124,9 @@ function ProductCard({ p, lang, open }: { p: Product; lang: 'mr' | 'en'; open: b
             {added ? t('shop.added') : t('shop.add')}
           </button>
         ) : (
-          <div className="grid grid-cols-[1.1fr_1fr] gap-2">
-            <Link to={`/dukan/${p.slug}`} className="btn btn-quiet !min-h-[3.25rem] !text-lg !px-2">{t('shop.details')}</Link>
-            <InterestButton productName={p.name_mr} slug={p.slug} label={t('shop.interest')} className="!min-h-[3.25rem] !text-lg !px-2" />
+          <div className="grid gap-2 lg:grid-cols-2">
+            <InterestButton productName={p.name_mr} slug={p.slug} label={t('shop.interest')} className="w-full !min-h-[3.25rem] !text-lg !px-2 whitespace-nowrap" />
+            <Link to={`/dukan/${p.slug}`} className="btn btn-quiet w-full !min-h-[3.25rem] !text-lg !px-2 lg:order-first">{t('shop.details')}</Link>
           </div>
         )}
       </div>

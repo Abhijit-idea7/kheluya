@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { addSubscriber } from '@/lib/api';
@@ -27,6 +27,14 @@ function InterestSheet({ productName, slug, onClose }: { productName: string; sl
   const [state, setState] = useState<'idle' | 'saving' | 'done' | 'bad' | 'error'>(() => {
     try { return localStorage.getItem(key) ? 'done' : 'idle'; } catch { return 'idle'; }
   });
+  // Close on the Back/Escape key, and stop the page behind from scrolling while the sheet is open.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
+  }, [onClose]);
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const digits = phone.replace(/\D/g, '');
@@ -41,9 +49,10 @@ function InterestSheet({ productName, slug, onClose }: { productName: string; sl
     }
   };
   return (
-    <div className="fixed inset-0 z-40 bg-ink/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-ink/40" onClick={onClose}>
       <section
         role="dialog"
+        aria-modal="true"
         aria-label={t('shop.notifyTitle')}
         onClick={(e) => e.stopPropagation()}
         className="absolute left-3 right-3 bottom-3 mx-auto max-w-md rounded-3xl border-[3px] border-ink bg-paper p-4 shadow-sticker"
@@ -62,7 +71,7 @@ function InterestSheet({ productName, slug, onClose }: { productName: string; sl
         ) : (
           <form onSubmit={submit} className="mt-3 flex flex-col gap-3">
             <FormField label={t('shop.co.phone')}>
-              <input className={inputClass} value={phone} onChange={(e) => { setPhone(e.target.value); if (state === 'bad') setState('idle'); }} inputMode="numeric" autoComplete="tel" placeholder="98XXXXXXXX" />
+              <input className={inputClass} value={phone} onChange={(e) => { setPhone(e.target.value); if (state === 'bad') setState('idle'); }} inputMode="numeric" autoComplete="tel" placeholder="98XXXXXXXX" autoFocus />
             </FormField>
             <FormField label={t('shop.notifyName')}>
               <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />

@@ -1,8 +1,8 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Minus, Plus, ShoppingCart, Truck, Wallet } from 'lucide-react';
-import { addSubscriber, getPublicSettings } from '@/lib/api';
+import { getPublicSettings } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
 import { addToCart, getCatalog, imageUrl, money, pickLang, readCart, setQty } from '@/lib/shop';
 import Illustration from '@/components/Illustration';
@@ -91,10 +91,7 @@ export default function DukanProductPage() {
           </div>
           {soon && <p className="self-start rounded-full bg-orange-soft border-2 border-ink px-3 py-0.5 text-xl font-bold">{t('shop.soon')}</p>}
           {soon && (
-            <div className="grid gap-2 sm:grid-cols-2">
-              <InterestButton productName={p.name_mr} slug={p.slug} label={t('shop.interest')} className="w-full" />
-              <Link to={`/dukan/${p.slug}`} className="btn btn-quiet w-full">{t('shop.details')}</Link>
-            </div>
+            <InterestButton productName={p.name_mr} slug={p.slug} label={t('shop.interest')} className="w-full lg:w-auto lg:self-start" />
           )}
           {!soon && !p.in_stock && <p className="text-xl font-bold text-[#B42318]">{t('shop.out')}</p>}
           {can && p.few_left && <p className="text-lg font-bold text-[#B42318]">{t('shop.few')}</p>}
