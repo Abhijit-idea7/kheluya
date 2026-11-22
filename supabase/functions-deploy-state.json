@@ -4,6 +4,10 @@
     "push-send": {
       "hasChanged": false,
       "hash": "fd87a91432e2b80b3ef25273fb0f9c25dd17e01eabf6d678ad199743a6746d7c"
+    },
+    "shop-pay": {
+      "hasChanged": false,
+      "hash": "014dbe4ba3ac85b04b8182d46265d2c3bed8ffd1fae5b8f217bcaa6d1aa050d6"
     }
   }
 }
