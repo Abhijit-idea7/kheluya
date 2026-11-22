@@ -6,6 +6,7 @@ import { getPublicSettings } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
 import { addToCart, getCatalog, imageUrl, money, pickLang, useCart, type Product } from '@/lib/shop';
 import Illustration from '@/components/Illustration';
+import InterestButton from '@/components/InterestButton';
 import { trackSite } from '@/lib/track';
 import { useEffect } from 'react';
 
@@ -123,7 +124,10 @@ function ProductCard({ p, lang, open }: { p: Product; lang: 'mr' | 'en'; open: b
             {added ? t('shop.added') : t('shop.add')}
           </button>
         ) : (
-          <Link to={`/dukan/${p.slug}`} className="btn btn-quiet w-full !min-h-[3.25rem] !text-lg !px-2">{t('shop.details')}</Link>
+          <div className="grid grid-cols-[1.1fr_1fr] gap-2">
+            <Link to={`/dukan/${p.slug}`} className="btn btn-quiet !min-h-[3.25rem] !text-lg !px-2">{t('shop.details')}</Link>
+            <InterestButton productName={p.name_mr} slug={p.slug} label={t('shop.interest')} className="!min-h-[3.25rem] !text-lg !px-2" />
+          </div>
         )}
       </div>
     </li>
