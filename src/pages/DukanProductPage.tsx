@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Minus, Plus, Truck, Wallet } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, ShoppingCart, Truck, Wallet } from 'lucide-react';
 import { getPublicSettings } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
 import { addToCart, getCatalog, imageUrl, money, pickLang, readCart, setQty } from '@/lib/shop';
@@ -49,24 +49,25 @@ export default function DukanProductPage() {
   const specs = p.specs.filter((s) => (lang === 'en' ? s.label_en || s.label_mr : s.label_mr) && (s.value_mr || s.value_en));
 
   return (
-    <div className="max-w-site mx-auto px-4 sm:px-5 py-4 sm:py-8">
+    <div className={`max-w-site mx-auto px-4 sm:px-5 py-4 sm:py-8 ${can ? 'pb-32 lg:pb-8' : ''}`}>
       <Link to="/dukan" className="inline-flex items-center gap-2 min-h-[2.75rem] mb-2 font-heading font-bold text-lg text-ink/75 hover:text-ink">
         <ArrowLeft size={20} strokeWidth={2.6} aria-hidden="true" />
         {t('shop.back')}
       </Link>
       <div className="grid gap-6 lg:grid-cols-2 items-start">
         <div>
-          <div className="sticker overflow-hidden bg-white">
+          {/* Portrait frame: the whole cover is shown, sized so the price stays near on a phone */}
+          <div className="sticker overflow-hidden bg-[#F3ECDD] p-3 flex justify-center items-center">
             {p.images[img] ? (
-              <img src={imageUrl(p.images[img])} alt={pickLang(p, 'name', lang)} className="w-full aspect-square object-contain" />
+              <img src={imageUrl(p.images[img])} alt={pickLang(p, 'name', lang)} className="h-[min(46vh,30rem)] lg:h-auto lg:max-h-[42rem] w-auto max-w-full aspect-[3/4] object-contain" />
             ) : (
-              <Illustration name="book" alt="" eager className="w-full aspect-square object-cover" />
+              <Illustration name="book" alt="" eager className="h-[min(46vh,30rem)] lg:h-auto w-auto max-w-full aspect-[3/4] object-cover rounded-lg" />
             )}
           </div>
           {p.images.length > 1 && (
-            <div className="mt-3 flex gap-2 overflow-x-auto">
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
               {p.images.map((src, i) => (
-                <button key={src} onClick={() => setImg(i)} aria-label={`${i + 1}`} className={`shrink-0 w-20 h-20 rounded-xl border-2 overflow-hidden bg-white ${i === img ? 'border-ink' : 'border-line'}`}>
+                <button key={src} onClick={() => setImg(i)} aria-label={`${i + 1}`} className={`shrink-0 w-16 aspect-[3/4] rounded-lg border-[3px] overflow-hidden bg-[#F3ECDD] ${i === img ? 'border-ink' : 'border-line'}`}>
                   <img src={imageUrl(src)} alt="" className="w-full h-full object-contain" />
                 </button>
               ))}
@@ -75,10 +76,10 @@ export default function DukanProductPage() {
         </div>
 
         <div className="flex flex-col gap-4">
-          <h1 className="text-heading-lg leading-tight">{pickLang(p, 'name', lang)}</h1>
+          <h1 className="text-heading-md sm:text-heading-lg leading-tight">{pickLang(p, 'name', lang)}</h1>
           {pickLang(p, 'short', lang) && <p className="text-xl leading-snug text-ink/85">{pickLang(p, 'short', lang)}</p>}
           <div className="flex items-baseline gap-3 flex-wrap">
-            <span className="font-heading font-extrabold text-[2.2rem]">{money(p.price_paise, lang)}</span>
+            <span className="font-heading font-extrabold text-[2rem] sm:text-[2.2rem]">{money(p.price_paise, lang)}</span>
             {p.mrp_paise && p.mrp_paise > p.price_paise && (
               <>
                 <s className="text-xl text-ink/55">{money(p.mrp_paise, lang)}</s>
@@ -102,7 +103,7 @@ export default function DukanProductPage() {
                   <Plus size={22} strokeWidth={3} aria-hidden="true" />
                 </button>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="hidden lg:grid gap-3 grid-cols-2">
                 <button type="button" onClick={add} className={`btn w-full ${added ? 'btn-whatsapp' : 'btn-quiet'}`}>{added ? t('shop.added') : t('shop.add')}</button>
                 <button type="button" onClick={buyNow} className="btn btn-primary w-full">{t('shop.buyNow')}</button>
               </div>
@@ -129,6 +130,20 @@ export default function DukanProductPage() {
           )}
         </div>
       </div>
+
+      {can && (
+        <div className="lg:hidden fixed inset-x-0 bottom-0 z-30 bg-paper border-t-[3px] border-ink px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center gap-2 shadow-[0_-4px_12px_rgba(16,35,63,0.12)]">
+          <div className="min-w-0 mr-auto leading-tight">
+            <p className="font-heading font-extrabold text-2xl">{money(p.price_paise * qty, lang)}</p>
+            {qty > 1 && <p className="text-sm text-ink/65">{num(qty)} × {money(p.price_paise, lang)}</p>}
+          </div>
+          <button type="button" onClick={add} aria-label={t('shop.add')} className={`grid place-items-center h-14 w-14 shrink-0 rounded-2xl border-[3px] border-ink ${added ? 'bg-green text-white' : 'bg-white'}`}>
+            <ShoppingCart size={26} strokeWidth={2.6} aria-hidden="true" />
+          </button>
+          <button type="button" onClick={buyNow} className="btn btn-primary !min-h-[3.5rem] !px-5 !text-xl shrink-0">{t('shop.buyNow')}</button>
+        </div>
+      )}
+      {added && <p role="status" className="lg:hidden fixed left-3 right-3 bottom-24 z-30 rounded-2xl bg-green text-white text-center font-bold text-lg py-2">{t('shop.added')}</p>}
     </div>
   );
 }

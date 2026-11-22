@@ -66,7 +66,7 @@ export default function DukanPage() {
         </div>
       )}
 
-      <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="mt-5 grid gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {shown.map((p) => (
           <ProductCard key={p.id} p={p} lang={lang} />
         ))}
@@ -85,34 +85,35 @@ function ProductCard({ p, lang }: { p: Product; lang: 'mr' | 'en' }) {
     setTimeout(() => setAdded(false), 1800);
   };
   return (
-    <li className="sticker overflow-hidden flex flex-col">
-      <Link to={`/dukan/${p.slug}`} className="block bg-white">
+    <li className="sticker overflow-hidden flex sm:flex-col">
+      {/* Book covers are portrait: a 3:4 frame that shows the whole cover. On phones the cover sits on the left. */}
+      <Link to={`/dukan/${p.slug}`} className="block shrink-0 w-[40%] sm:w-full bg-[#F3ECDD] p-2 sm:p-3">
         {p.images[0] ? (
-          <img src={imageUrl(p.images[0])} alt={pickLang(p, 'name', lang)} loading="lazy" className="w-full aspect-square object-contain" />
+          <img src={imageUrl(p.images[0])} alt={pickLang(p, 'name', lang)} loading="lazy" className="w-full aspect-[3/4] object-contain" />
         ) : (
-          <Illustration name="book" alt="" className="w-full aspect-square object-cover" />
+          <Illustration name="book" alt="" className="w-full aspect-[3/4] object-cover rounded-lg" />
         )}
       </Link>
-      <div className="p-4 flex flex-col gap-2 flex-1">
-        <Link to={`/dukan/${p.slug}`} className="font-heading font-extrabold text-[1.35rem] leading-tight hover:underline">{pickLang(p, 'name', lang)}</Link>
-        {pickLang(p, 'short', lang) && <p className="text-lg leading-snug text-ink/80">{pickLang(p, 'short', lang)}</p>}
-        <div className="mt-auto flex items-baseline gap-2 flex-wrap">
+      <div className="p-3 sm:p-4 flex flex-col gap-1.5 sm:gap-2 flex-1 min-w-0">
+        <Link to={`/dukan/${p.slug}`} className="font-heading font-extrabold text-xl sm:text-[1.35rem] leading-tight hover:underline">{pickLang(p, 'name', lang)}</Link>
+        {pickLang(p, 'short', lang) && <p className="text-base sm:text-lg leading-snug text-ink/80 line-clamp-3">{pickLang(p, 'short', lang)}</p>}
+        <div className="mt-auto flex items-baseline gap-x-2 flex-wrap">
           <span className="font-heading font-extrabold text-2xl">{money(p.price_paise, lang)}</span>
-          {p.mrp_paise && p.mrp_paise > p.price_paise && <s className="text-lg text-ink/55">{money(p.mrp_paise, lang)}</s>}
-          {p.coming_soon ? (
-            <span className="ml-auto rounded-full bg-orange-soft border-2 border-ink px-3 text-base font-bold">{t('shop.soon')}</span>
-          ) : !p.in_stock ? (
-            <span className="ml-auto rounded-full bg-cream border-2 border-line px-3 text-base font-bold text-ink/70">{t('shop.out')}</span>
-          ) : p.few_left ? (
-            <span className="ml-auto text-base font-bold text-[#B42318]">{t('shop.few')}</span>
-          ) : null}
+          {p.mrp_paise && p.mrp_paise > p.price_paise && <s className="text-base sm:text-lg text-ink/55">{money(p.mrp_paise, lang)}</s>}
         </div>
+        {p.coming_soon ? (
+          <span className="self-start rounded-full bg-orange-soft border-2 border-ink px-3 text-base font-bold">{t('shop.soon')}</span>
+        ) : !p.in_stock ? (
+          <span className="self-start rounded-full bg-cream border-2 border-line px-3 text-base font-bold text-ink/70">{t('shop.out')}</span>
+        ) : p.few_left ? (
+          <span className="text-base font-bold text-[#B42318]">{t('shop.few')}</span>
+        ) : null}
         {can ? (
-          <button type="button" onClick={add} className={`btn w-full ${added ? 'btn-whatsapp' : 'btn-primary'}`}>
+          <button type="button" onClick={add} className={`btn w-full !min-h-[3.25rem] !text-lg !px-2 ${added ? 'btn-whatsapp' : 'btn-primary'}`}>
             {added ? t('shop.added') : t('shop.add')}
           </button>
         ) : (
-          <Link to={`/dukan/${p.slug}`} className="btn btn-quiet w-full">{t('shop.details')}</Link>
+          <Link to={`/dukan/${p.slug}`} className="btn btn-quiet w-full !min-h-[3.25rem] !text-lg !px-2">{t('shop.details')}</Link>
         )}
       </div>
     </li>

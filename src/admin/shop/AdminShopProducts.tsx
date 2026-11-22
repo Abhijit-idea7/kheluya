@@ -48,7 +48,7 @@ export default function AdminShopProducts() {
             <tbody>
               {prods.map((p) => (
                 <tr key={p.id} className="border-t border-line cursor-pointer hover:bg-orange-soft/40" onClick={() => setEdit({ ...BLANK, ...p })}>
-                  <td className="p-2">{p.images[0] ? <img src={imageUrl(p.images[0])} alt="" className="w-12 h-12 object-contain bg-white rounded-lg border border-line" /> : <span className="block w-12 h-12 rounded-lg bg-cream" />}</td>
+                  <td className="p-2">{p.images[0] ? <img src={imageUrl(p.images[0])} alt="" className="w-12 aspect-[3/4] object-contain bg-white rounded-lg border border-line" /> : <span className="block w-12 aspect-[3/4] rounded-lg bg-cream" />}</td>
                   <td className="p-2.5 font-bold">{p.name_mr}<br /><span className="font-normal text-ink/60">/{p.slug}</span></td>
                   <td className="p-2.5">{cats.find((c) => c.id === p.category_id)?.name_mr ?? '—'}</td>
                   <td className="p-2.5 tabular-nums">{rs(p.price_paise)}{p.mrp_paise ? <s className="ml-1 text-ink/50">{rs(p.mrp_paise)}</s> : null}</td>
@@ -195,8 +195,8 @@ function ProductEditor({ p: start, cats, onDone }: { p: Prod; cats: Cat[]; onDon
         <h3 className="font-bold">Pictures</h3>
         <div className="flex flex-wrap gap-3">
           {p.images.map((src, i) => (
-            <div key={src} className="w-32">
-              <img src={imageUrl(src)} alt="" className="w-32 h-32 object-contain bg-white rounded-xl border border-line" />
+            <div key={src} className="w-28">
+              <img src={imageUrl(src)} alt="" className="w-28 aspect-[3/4] object-contain bg-white rounded-xl border border-line" />
               <div className="mt-1 flex gap-1 justify-center text-sm">
                 <button className="px-2 border rounded" onClick={() => move(i, -1)} aria-label="Move left">←</button>
                 <button className="px-2 border rounded text-[#8A1C14]" onClick={() => set('images', p.images.filter((x) => x !== src))}>Remove</button>
@@ -206,7 +206,7 @@ function ProductEditor({ p: start, cats, onDone }: { p: Prod; cats: Cat[]; onDon
           ))}
         </div>
         <input type="file" accept="image/*" multiple onChange={(e) => upload(e.target.files)} />
-        <p className="text-sm text-ink/60">The first picture is shown in the list. Square pictures look best.</p>
+        <p className="text-sm text-ink/60">The first picture is shown in the list. Portrait (3:4) pictures — like a book cover — fit best; other shapes are shown whole.</p>
       </Card>
 
       <Card className="grid gap-2">

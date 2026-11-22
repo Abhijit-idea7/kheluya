@@ -37,7 +37,7 @@ export default function PishviPage() {
       <ul className="mt-4 grid gap-3">
         {lines.map(({ id, qty, p }) => (
           <li key={id} className="flex gap-3 p-3 rounded-2xl border-2 border-ink bg-paper">
-            <Link to={`/dukan/${p!.slug}`} className="shrink-0 w-20 h-20 rounded-xl border border-line overflow-hidden bg-white">
+            <Link to={`/dukan/${p!.slug}`} className="shrink-0 w-16 aspect-[3/4] rounded-lg border border-line overflow-hidden bg-[#F3ECDD]">
               {p!.images[0] ? <img src={imageUrl(p!.images[0])} alt="" className="w-full h-full object-contain" /> : <Illustration name="book" alt="" className="w-full h-full object-cover" />}
             </Link>
             <div className="flex-1 min-w-0">
