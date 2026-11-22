@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { addSubscriber } from '@/lib/api';
 import FormField, { inputClass } from '@/components/FormField';
+import { trackSite } from '@/lib/track';
 
 /**
  * "कळवा" button: opens a small bottom sheet that saves a WhatsApp number as interest (subscribers, interest: book).
@@ -13,7 +14,7 @@ export default function InterestButton({ productName, slug, label, className = '
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={`btn btn-primary ${className}`}>{label}</button>
+      <button type="button" onClick={() => { setOpen(true); trackSite('book_form_start'); }} className={`btn btn-primary ${className}`}>{label}</button>
       {open && <InterestSheet productName={productName} slug={slug} onClose={() => setOpen(false)} />}
     </>
   );

@@ -21,13 +21,17 @@ const waNumber = (phone: string) => {
   return d.length === 10 ? `91${d}` : d;
 };
 const waLink = (phone: string, text: string) => `https://wa.me/${waNumber(phone)}?text=${encodeURIComponent(text)}`;
-const isBook = (s: Sub) => s.source_page === '/dukan';
+/** Shop interest: the old book form (/dukan) and the "मला कळवा" button on any product (/dukan/<web-name>). */
+const isBook = (s: Sub) => s.source_page === '/dukan' || s.source_page.startsWith('/dukan/');
+/** Which product a shop sign-up is for (the product button saves its name in the note). */
+const productOf = (s: Sub) => (s.source_page.startsWith('/dukan/') ? s.note || s.source_page.slice(7) : 'Marathi puzzle book');
 
 /** The same number signed up twice counts once: keep the newest row, add up copies. */
 function uniqueByPhone(rows: Sub[]): (Sub & { times: number })[] {
   const by = new Map<string, Sub & { times: number }>();
   for (const s of rows) {
-    const k = s.phone.replace(/[^0-9]/g, '').slice(-10);
+    // Same person for two different products counts once per product.
+    const k = s.phone.replace(/[^0-9]/g, '').slice(-10) + (isBook(s) ? '|' + productOf(s) : '');
     const prev = by.get(k);
     if (!prev) by.set(k, { ...s, times: 1 });
     else {
@@ -61,14 +65,14 @@ export default function AdminPeople() {
 
   const book = useMemo(() => uniqueByPhone((subs ?? []).filter(isBook)), [subs]);
   const list = useMemo(() => uniqueByPhone((subs ?? []).filter((s) => !isBook(s))), [subs]);
-  const copies = book.reduce((t, s) => t + (s.copies ?? 1), 0);
+  const copies = book.reduce((t, s) => t + (s.copies ?? 0), 0); // only the old book form asked how many copies
   const isNew = (iso: string) => !!seen && iso > seen;
   const newCount = (rows: { created_at: string }[]) => rows.filter((r) => isNew(r.created_at)).length;
 
   const removeSub = async (s: Sub) => {
     if (!window.confirm(`Remove ${s.phone} from the list? This cannot be undone.`)) return;
     const q = supabase!.from('subscribers').delete().eq('phone', s.phone);
-    await (isBook(s) ? q.eq('source_page', '/dukan') : q.neq('source_page', '/dukan'));
+    await (isBook(s) ? q.eq('source_page', s.source_page) : q.not('source_page', 'like', '/dukan%'));
     load();
   };
   const removeMsg = async (m: Msg) => {
@@ -94,7 +98,7 @@ export default function AdminPeople() {
 
   const loading = !subs || !msgs;
   const thankText = (s: Sub) =>
-    `नमस्कार${s.name ? ' ' + s.name : ''}! चला खेळूया च्या मोठ्या अक्षरातील शब्दकोडी पुस्तकात रस दाखवल्याबद्दल धन्यवाद. पुस्तक तयार होताच आम्ही तुम्हाला इथेच कळवू. 🙏`;
+    `नमस्कार${s.name ? ' ' + s.name : ''}! चला खेळूया च्या ${s.source_page.startsWith('/dukan/') ? `"${productOf(s)}" मध्ये` : 'मोठ्या अक्षरातील शब्दकोडी पुस्तकात'} रस दाखवल्याबद्दल धन्यवाद. ते उपलब्ध होताच आम्ही तुम्हाला इथेच कळवू. 🙏`;
   const inviteText = (s: Sub) =>
     `नमस्कार${s.name ? ' ' + s.name : ''}! चला खेळूया चे रोजचे कोडे आता आमच्या WhatsApp community मध्ये मिळते. इथे Join करा: ${community}`;
 
@@ -108,7 +112,7 @@ export default function AdminPeople() {
       ) : (
         <>
           <div className="mt-4 grid gap-3 grid-cols-1 sm:grid-cols-3">
-            {tile('book', 'Want the book', String(book.length), `${copies} copies · last ${ago(book[0]?.created_at)}`, newCount(book))}
+            {tile('book', 'Shop interest', String(book.length), `${copies ? `${copies} copies · ` : ''}last ${ago(book[0]?.created_at)}`, newCount(book))}
             {tile('list', 'Old updates list', String(list.length), `last sign-up ${ago(list[0]?.created_at)}`, newCount(list))}
             {tile('msgs', 'Messages', String(msgs.length), `last ${ago(msgs[0]?.created_at)}`, newCount(msgs))}
           </div>
@@ -116,14 +120,14 @@ export default function AdminPeople() {
           {tab === 'book' && (
             <section className="mt-6">
               <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-2xl mr-auto">Want the book</h2>
-                <button className={btnQuiet} disabled={!book.length} onClick={() => downloadCsv('chala-kheluya-book-interest.csv', book.map((s) => ({ when: when(s.created_at), name: s.name, whatsapp: s.phone, city: s.city, copies: s.copies ?? '', note: s.note ?? '' })))}>
+                <h2 className="text-2xl mr-auto">Shop interest</h2>
+                <button className={btnQuiet} disabled={!book.length} onClick={() => downloadCsv('chala-kheluya-book-interest.csv', book.map((s) => ({ when: when(s.created_at), product: productOf(s), name: s.name, whatsapp: s.phone, city: s.city, copies: s.copies ?? '', note: s.source_page.startsWith('/dukan/') ? '' : s.note ?? '' })))}>
                   Download CSV
                 </button>
               </div>
-              <p className="mt-1 text-sm text-ink/60">From the form on the shop page (/dukan). These are your first buyers — message them when the book is ready. The “Say thanks” button opens WhatsApp with a ready message.</p>
+              <p className="mt-1 text-sm text-ink/60">People who tapped “मला कळवा” on a coming-soon product (and the old book form). These are your first buyers — message them when it goes on sale. The “Say thanks” button opens WhatsApp with a ready message.</p>
               {book.length === 0 ? (
-                <Card className="mt-4">No one yet. The form is on the shop page. Shop visits are counted under Stats → Shop.</Card>
+                <Card className="mt-4">No one yet. Coming-soon products have a “मला कळवा” button. Shop visits are counted under Stats → Shop.</Card>
               ) : (
                 <div className="mt-4 grid gap-3">
                   {book.map((s) => (
@@ -132,11 +136,12 @@ export default function AdminPeople() {
                         <span className="text-xl font-bold">{s.name || 'No name'}</span>
                         <span className="font-bold tabular-nums">{s.phone}</span>
                         {s.city && <span className="text-ink/70">{s.city}</span>}
-                        <span className="rounded-full bg-orange-soft border border-ink px-2 text-sm font-bold">{s.copies ? `${s.copies === 5 ? '5+' : s.copies} ${s.copies === 1 ? 'copy' : 'copies'}` : 'copies not said'}</span>
+                        <span className="rounded-full bg-cream border border-ink px-2 text-sm font-bold">{productOf(s)}</span>
+                        {s.copies ? <span className="rounded-full bg-orange-soft border border-ink px-2 text-sm font-bold">{`${s.copies === 5 ? '5+' : s.copies} ${s.copies === 1 ? 'copy' : 'copies'}`}</span> : null}
                         {isNew(s.created_at) && <span className="rounded-full bg-green text-white text-xs px-2 py-0.5">new</span>}
                         <span className="text-sm text-ink/55 ml-auto">{when(s.created_at)}{s.times > 1 ? ` · signed up ${s.times}×` : ''}</span>
                       </div>
-                      {s.note && <p className="mt-2 rounded-xl bg-white border border-line p-3 whitespace-pre-line">“{s.note}”</p>}
+                      {s.note && !s.source_page.startsWith('/dukan/') && <p className="mt-2 rounded-xl bg-white border border-line p-3 whitespace-pre-line">“{s.note}”</p>}
                       <div className="mt-3 flex flex-wrap gap-2">
                         <a className={btnQuiet} href={waLink(s.phone, thankText(s))} target="_blank" rel="noreferrer">Say thanks on WhatsApp</a>
                         <button className={`${btnDanger} ml-auto`} onClick={() => removeSub(s)}>Remove</button>
@@ -194,7 +199,7 @@ export default function AdminPeople() {
           {tab === 'msgs' && (
             <section className="mt-6">
               <h2 className="text-2xl">Messages</h2>
-              <p className="mt-1 text-sm text-ink/60">From the contact form (/sampark). Most people now talk to you in the WhatsApp community instead; book questions arrive as notes under “Want the book”.</p>
+              <p className="mt-1 text-sm text-ink/60">From the contact form (/sampark). Most people now talk to you in the WhatsApp community instead; shop interest is under “Shop interest”.</p>
               {msgs.length === 0 ? (
                 <Card className="mt-4">No messages yet.</Card>
               ) : (
