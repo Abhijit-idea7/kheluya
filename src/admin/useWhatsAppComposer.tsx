@@ -7,7 +7,7 @@ import { btnQuiet, Card, input } from '@/admin/ui';
  * {name}, {product} and {link} are filled in for each person. "Sent ✓" is remembered on this device.
  */
 export type Template = { id: string; label: string; text: string };
-export type Person = { id: string; phone: string; name?: string; product?: string; link?: string };
+export type Person = { id: string; phone: string; name?: string; product?: string; link?: string; asked?: string };
 
 const SENT_KEY = 'ck-admin-wa-sent';
 const readSent = (): Record<string, string> => {
@@ -29,7 +29,8 @@ export function useWhatsAppComposer(templates: Template[], listKey: string) {
     text
       .replace(/\{name\}/g, p.name ? ` ${p.name}` : '')
       .replace(/\{product\}/g, p.product ?? '')
-      .replace(/\{link\}/g, p.link ?? '');
+      .replace(/\{link\}/g, p.link ?? '')
+      .replace(/\{asked\}/g, p.asked ?? '');
   const key = (p: Person) => `${listKey}:${tid}:${p.id}`;
   const mark = (p: Person) => {
     const next = { ...readSent(), [key(p)]: new Date().toISOString() };
@@ -44,7 +45,7 @@ export function useWhatsAppComposer(templates: Template[], listKey: string) {
       <h3 className="font-bold text-lg">Send a WhatsApp message</h3>
       <p className="text-sm text-ink/60">
         Pick a message, check it, then press <b>Send</b> next to each person — WhatsApp opens with the message ready.
-        <code className="mx-1">{'{name}'}</code> becomes their name.
+        <code className="mx-1">{'{name}'}</code> becomes their name; <code className="mx-1">{'{asked}'}</code> becomes what they asked for.
       </p>
       <div className="flex flex-wrap gap-2">
         {[...templates, { id: 'own', label: 'Write my own', text: 'नमस्कार{name}! ' }].map((t) => (

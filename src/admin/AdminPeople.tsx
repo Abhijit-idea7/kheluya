@@ -73,6 +73,7 @@ export default function AdminPeople() {
   const site = typeof window !== 'undefined' ? window.location.origin : 'https://chalakheluya.com';
   const listWa = useWhatsAppComposer(
     [
+      { id: 'thanks', label: 'Say thanks', text: 'नमस्कार{name}! चला खेळूया मध्ये नाव नोंदवल्याबद्दल मनःपूर्वक धन्यवाद 🙏 {asked}' },
       ...(community ? [{ id: 'invite', label: 'Invite to community', text: `नमस्कार{name}! चला खेळूया चे रोजचे कोडे आता आमच्या WhatsApp community मध्ये मिळते. इथे Join करा: ${community}` }] : []),
       { id: 'today', label: 'Today’s puzzle', text: `नमस्कार{name}! आजचे चला खेळूया कोडे तयार आहे 🧩 मोठ्या अक्षरात, फोनवर — इथे खेळा: ${site}` },
       { id: 'shop', label: 'Book in the shop', text: `नमस्कार{name}! चला खेळूया चे मोठ्या अक्षरातील मराठी कोड्यांचे पुस्तक आता दुकानात आहे 📖 घरपोच, डिलिव्हरी मोफत. इथे पाहा: ${site}/dukan` },
@@ -86,8 +87,17 @@ export default function AdminPeople() {
     ],
     'book',
   );
+  // What this person signed up for, as a ready sentence for the thank-you message
+  const askedFor = (s: Sub) => {
+    const play = `रोजचे नवीन मराठी कोडे इथे खेळा: ${site}${community ? ` — आणि रोज कोडे मिळवण्यासाठी आमच्या WhatsApp community मध्ये या: ${community}` : ''}`;
+    const book = `तुम्ही विचारलेले मोठ्या अक्षरातील मराठी कोड्यांचे पुस्तक आता चला खेळूया दुकानात आहे 📖 घरपोच, डिलिव्हरी मोफत: ${site}/dukan`;
+    if (isBook(s)) return `तुम्ही विचारलेले "${productOf(s)}" उपलब्ध होताच इथेच कळवू. दुकान: ${s.source_page.startsWith('/dukan/') ? `${site}${s.source_page}` : `${site}/dukan`}`;
+    if (s.interest === 'book') return book;
+    if (s.interest === 'both') return `${book}\n${play}`;
+    return play;
+  };
   const personOf = (s: Sub): Person => ({
-    id: s.id, phone: s.phone, name: s.name,
+    id: s.id, phone: s.phone, name: s.name, asked: askedFor(s),
     product: isBook(s) ? `"${productOf(s)}"` : '',
     link: s.source_page.startsWith('/dukan/') ? `${site}${s.source_page}` : `${site}/dukan`,
   });
