@@ -37,10 +37,12 @@ export default function AdminShopOrders() {
   return (
     <div className="grid gap-4">
       <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
-        <Card><div className="text-sm font-bold text-ink/65">To pack and send</div><div className="text-3xl font-heading font-extrabold">{todo}</div></Card>
-        <Card><div className="text-sm font-bold text-ink/65">On the way</div><div className="text-3xl font-heading font-extrabold">{c.shipped ?? 0}</div></Card>
-        <Card><div className="text-sm font-bold text-ink/65">Delivered</div><div className="text-3xl font-heading font-extrabold">{c.delivered ?? 0}</div></Card>
-        <Card><div className="text-sm font-bold text-ink/65">Awaiting payment</div><div className="text-3xl font-heading font-extrabold">{c.pending_payment ?? 0}</div></Card>
+        {([['to_do', 'To pack and send', todo], ['shipped', 'On the way', c.shipped ?? 0], ['delivered', 'Delivered', c.delivered ?? 0], ['pending_payment', 'Awaiting payment', c.pending_payment ?? 0]] as const).map(([k, label, n]) => (
+          <button key={k} type="button" onClick={() => setFilter(k)} className={`text-left rounded-2xl border-2 border-ink p-3 sm:p-4 ${filter === k ? 'bg-orange-soft' : 'bg-paper'}`}>
+            <div className="text-sm font-bold text-ink/65">{label}</div>
+            <div className="text-2xl sm:text-3xl font-heading font-extrabold">{n}</div>
+          </button>
+        ))}
       </div>
       {(c.to_check ?? 0) > 0 && (
         <button className="text-left rounded-2xl border-[3px] border-green bg-green-soft p-3 font-bold" onClick={() => setFilter('to_check')}>
@@ -54,7 +56,15 @@ export default function AdminShopOrders() {
           {data.money.refund_due > 0 && <> · <b className="text-[#8A1C14]">refunds due {rs(data.money.refund_due)}</b></>}
         </p>
       )}
-      <div className="flex gap-2 overflow-x-auto -mx-3 px-3 pb-1 sm:mx-0 sm:px-0 sm:flex-wrap [scrollbar-width:none]">
+      <label className="sm:hidden flex items-center gap-2">
+        <span className="font-bold shrink-0">Show</span>
+        <select className={`${input} !py-2 font-bold`} value={filter} onChange={(e) => setFilter(e.target.value)}>
+          {FILTERS.map(([k, label]) => (
+            <option key={k || 'all'} value={k}>{label}{k && k !== 'to_do' && c[k] ? ` (${c[k]})` : k === 'to_do' && todo ? ` (${todo})` : ''}</option>
+          ))}
+        </select>
+      </label>
+      <div className="hidden sm:flex flex-wrap gap-2">
         {FILTERS.map(([k, label]) => (
           <button key={k || 'all'} className={`${btnQuiet} !py-1 shrink-0 whitespace-nowrap ${filter === k ? '!bg-orange-soft' : ''}`} onClick={() => setFilter(k)}>
             {label}{k && k !== 'to_do' && c[k] ? ` (${c[k]})` : k === 'to_do' && todo ? ` (${todo})` : ''}
@@ -315,9 +325,9 @@ function MessageBox({ msgs, initial, phone }: { msgs: Msg[]; initial: string; ph
     <Card>
       <h3 className="font-bold">Message for the customer</h3>
       <p className="text-sm text-ink/60">Pick the stage, check the text, then Copy (paste it in any WhatsApp) or open WhatsApp directly.</p>
-      <div className="mt-2 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+      <div className="mt-2 flex flex-wrap gap-2">
         {msgs.map((m) => (
-          <button key={m.id} type="button" onClick={() => pick(m)} className={`${btnQuiet} !py-1 !px-3 !text-sm whitespace-nowrap shrink-0 ${id === m.id ? '!bg-orange-soft' : ''}`}>{m.label}</button>
+          <button key={m.id} type="button" onClick={() => pick(m)} className={`${btnQuiet} !py-1 !px-3 !text-sm ${id === m.id ? '!bg-orange-soft' : ''}`}>{m.label}</button>
         ))}
       </div>
       <textarea id="cust-msg" className={`${input} mt-2 min-h-[8rem] !text-base leading-relaxed`} value={text} onChange={(e) => setText(e.target.value)} />

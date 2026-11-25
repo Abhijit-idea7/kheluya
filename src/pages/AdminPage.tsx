@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Route, Routes, Navigate } from 'react-router-dom';
+import { NavLink, Route, Routes, Navigate, useLocation } from 'react-router-dom';
+import { BarChart3, Bell, ExternalLink, Grid2x2, LogOut, MoreHorizontal, Settings as SettingsIcon, Shapes, ShoppingBag, Users } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { input, btnPrimary, btnQuiet, Card } from '@/admin/ui';
@@ -67,23 +68,36 @@ export default function AdminPage() {
   return <AdminLayout onSignOut={() => supabase!.auth.signOut()} />;
 }
 
-/** The signed-in admin: menu across the top (scrolls sideways on a phone) and the admin screens. */
+const MAIN = [
+  { to: '/admin/shop', label: 'Shop', Icon: ShoppingBag },
+  { to: '/admin/puzzles', label: 'Puzzles', Icon: Grid2x2 },
+  { to: '/admin/stats', label: 'Stats', Icon: BarChart3 },
+  { to: '/admin/people', label: 'People', Icon: Users },
+];
+const MORE = [
+  { to: '/admin/notifications', label: 'Notifications', Icon: Bell },
+  { to: '/admin/types', label: 'Puzzle types', Icon: Shapes },
+  { to: '/admin/settings', label: 'Settings', Icon: SettingsIcon },
+];
+
+/**
+ * The signed-in admin. Wide screens: menu across the top.
+ * Phones: a tab bar at the bottom (Shop, Puzzles, Stats, People, More) like a phone app — nothing to slide.
+ */
 export function AdminLayout({ onSignOut }: { onSignOut: () => void }) {
   const tab = ({ isActive }: { isActive: boolean }) =>
     `shrink-0 whitespace-nowrap px-3 py-2 rounded-xl font-bold ${isActive ? 'bg-orange-soft border-2 border-ink' : 'border-2 border-transparent hover:bg-cream'}`;
+  const [more, setMore] = useState(false);
+  const { pathname } = useLocation();
+  useEffect(() => setMore(false), [pathname]);
+  const inMore = MORE.some((m) => pathname.startsWith(m.to));
 
   return (
     <Shell
       onSignOut={onSignOut}
       nav={
-        <nav className="flex gap-1 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap pb-1 sm:pb-0 [scrollbar-width:none]">
-          <NavLink to="/admin/shop" className={tab}>Shop</NavLink>
-          <NavLink to="/admin/puzzles" className={tab}>Puzzles</NavLink>
-          <NavLink to="/admin/stats" className={tab}>Stats</NavLink>
-          <NavLink to="/admin/people" className={tab}>People</NavLink>
-          <NavLink to="/admin/notifications" className={tab}>Notifications</NavLink>
-          <NavLink to="/admin/types" className={tab}>Puzzle types</NavLink>
-          <NavLink to="/admin/settings" className={tab}>Settings</NavLink>
+        <nav className="hidden lg:flex flex-wrap gap-1">
+          {[...MAIN, ...MORE].map((m) => <NavLink key={m.to} to={m.to} className={tab}>{m.label}</NavLink>)}
         </nav>
       }
     >
@@ -100,6 +114,34 @@ export function AdminLayout({ onSignOut }: { onSignOut: () => void }) {
         <Route path="shop/*" element={<AdminShop />} />
         <Route path="*" element={<Navigate to="/admin/puzzles" replace />} />
       </Routes>
+
+      {/* Phone tab bar */}
+      <nav aria-label="Admin" className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-paper border-t-[3px] border-ink grid grid-cols-5 pb-[env(safe-area-inset-bottom)]">
+        {MAIN.map(({ to, label, Icon }) => (
+          <NavLink key={to} to={to} className={({ isActive }) => `flex flex-col items-center justify-center gap-0.5 py-2 text-xs font-bold ${isActive ? 'text-ink bg-orange-soft' : 'text-ink/60'}`}>
+            <Icon size={22} strokeWidth={2.4} aria-hidden="true" />
+            {label}
+          </NavLink>
+        ))}
+        <button type="button" onClick={() => setMore((v) => !v)} aria-expanded={more}
+          className={`flex flex-col items-center justify-center gap-0.5 py-2 text-xs font-bold ${inMore || more ? 'text-ink bg-orange-soft' : 'text-ink/60'}`}>
+          <MoreHorizontal size={22} strokeWidth={2.4} aria-hidden="true" />
+          More
+        </button>
+      </nav>
+      {more && (
+        <div className="lg:hidden fixed inset-0 z-30 bg-ink/40" onClick={() => setMore(false)}>
+          <div className="absolute inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] mx-2 rounded-2xl border-[3px] border-ink bg-paper p-2 grid gap-1" onClick={(e) => e.stopPropagation()}>
+            {MORE.map(({ to, label, Icon }) => (
+              <NavLink key={to} to={to} className={({ isActive }) => `flex items-center gap-3 px-3 py-3 rounded-xl text-lg font-bold ${isActive ? 'bg-orange-soft' : ''}`}>
+                <Icon size={22} strokeWidth={2.4} aria-hidden="true" />{label}
+              </NavLink>
+            ))}
+            <a href="/" className="flex items-center gap-3 px-3 py-3 rounded-xl text-lg font-bold"><ExternalLink size={22} strokeWidth={2.4} aria-hidden="true" />Open the website</a>
+            <button type="button" onClick={onSignOut} className="flex items-center gap-3 px-3 py-3 rounded-xl text-lg font-bold text-[#8A1C14]"><LogOut size={22} strokeWidth={2.4} aria-hidden="true" />Sign out</button>
+          </div>
+        </div>
+      )}
     </Shell>
   );
 }
@@ -108,19 +150,19 @@ function Shell({ children, nav, onSignOut }: { children: React.ReactNode; nav?: 
   return (
     <div className="min-h-screen bg-cream text-base leading-normal">
       <header className="bg-paper border-b-[3px] border-ink">
-        <div className="max-w-site mx-auto px-4 py-2 grid gap-2 lg:flex lg:items-center lg:gap-3">
-          <div className="flex items-center gap-3 lg:contents">
+        <div className="max-w-site mx-auto px-4 py-2 flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-1 lg:flex-none">
             <a href="/" className="shrink-0">
               <img src="/brand/logo-mark.webp" alt="चला खेळूया" width={250} height={80} className="h-9 sm:h-10 w-auto" />
             </a>
             <span className="font-heading font-extrabold text-xl">Admin</span>
             <span className="hidden sm:inline text-xs text-ink/55" title="When this version was built (India time)">Version {__BUILD_STAMP__}</span>
-            {onSignOut && <button className={`${btnQuiet} !py-1 !px-3 !text-sm ml-auto lg:order-last`} onClick={onSignOut}>Sign out</button>}
+            {onSignOut && <button className={`${btnQuiet} !py-1 !px-3 !text-sm ml-auto lg:order-last hidden lg:inline-flex`} onClick={onSignOut}>Sign out</button>}
           </div>
           {nav}
         </div>
       </header>
-      <main className="max-w-site mx-auto px-3 sm:px-4 py-4 sm:py-6">{children}</main>
+      <main className={`max-w-site mx-auto px-3 sm:px-4 py-4 sm:py-6 ${onSignOut ? 'pb-28 lg:pb-6' : ''}`}>{children}</main>
     </div>
   );
 }
