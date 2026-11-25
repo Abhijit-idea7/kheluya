@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
 import FormField, { inputClass } from '@/components/FormField';
@@ -19,6 +19,11 @@ export default function CheckoutPage() {
   const lang = i18n.language === 'en' ? 'en' : 'mr';
   const navigate = useNavigate();
   const cart = useCart();
+  // "Buy now": check out just this one product, without touching the cart
+  const [params] = useSearchParams();
+  const buyId = params.get('buy');
+  const buyQty = Math.max(1, Math.min(100, Number(params.get('qty')) || 1));
+  const [placing, setPlacing] = useState(false);
   const { data, loading } = useAsync(async () => {
     const [s, c] = await Promise.all([getPublicSettings(), getCatalog()]);
     return { s, c };
@@ -39,11 +44,21 @@ export default function CheckoutPage() {
   const upiOn = s.upi_direct === true && /^[A-Za-z0-9._-]{2,}@[A-Za-z0-9.]{2,}$/.test(String(s.upi_id ?? ''));
   const codOn = s.cash_on_delivery === true;
   const codMax = Number(s.cod_max_rupees ?? 2000) * 100;
-  const lines = cart.map((l) => ({ ...l, p: data.c.products.find((p) => p.id === l.id) })).filter((l) => l.p);
+  const chosen = buyId ? [{ id: buyId, qty: buyQty }] : cart;
+  const lines = chosen.map((l) => ({ ...l, p: data.c.products.find((p) => p.id === l.id) })).filter((l) => l.p);
   const total = lines.reduce((sum, l) => sum + l.p!.price_paise * l.qty, 0);
   const codOk = codOn && total <= codMax;
   const method: Pay | '' = pay || (onlineOn ? 'razorpay' : upiOn ? 'upi' : codOk ? 'cod' : '');
 
+  // Order placed: show a calm "opening payment" screen (the cart is empty by now)
+  if (placing) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16 text-center" role="status">
+        <div className="mx-auto h-14 w-14 rounded-full border-[5px] border-orange border-t-transparent animate-spin" aria-hidden="true" />
+        <p className="mt-5 text-heading-sm">{t('shop.co.opening')}</p>
+      </div>
+    );
+  }
   if (!open) return <p className="max-w-xl mx-auto px-4 py-10 text-xl">{t('shop.co.closed')}</p>;
   if (!lines.length) {
     return (
@@ -72,7 +87,8 @@ export default function CheckoutPage() {
     saveCustomer(clean);
     try {
       const r = await placeOrder(clean, lines.map(({ id, qty }) => ({ id, qty })), method, note.trim());
-      clearCart();
+      setPlacing(true);
+      if (!buyId) clearCart();
       if (r.payment === 'razorpay') {
         try {
           await payOnline(r.order_no, r.access_key, lines.map((l) => pickLang(l.p!, 'name', lang)).join(', ').slice(0, 200));
@@ -83,6 +99,7 @@ export default function CheckoutPage() {
       navigate(`/order/${r.order_no}?k=${r.access_key}&new=1`, { replace: true });
     } catch (e2) {
       const { code, detail } = shopError(e2);
+      setPlacing(false);
       setErr(t(`shop.err.${code}`, { d: detail, defaultValue: t('shop.err.UNKNOWN') }));
       setBusy(false);
     }

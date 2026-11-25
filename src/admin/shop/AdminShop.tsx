@@ -7,11 +7,11 @@ import AdminShopSettings from '@/admin/shop/AdminShopSettings';
 /** Admin → Shop: orders, products, customers, settings. */
 export default function AdminShop() {
   const tab = ({ isActive }: { isActive: boolean }) =>
-    `px-4 py-2 rounded-xl border-2 font-bold ${isActive ? 'bg-orange-soft border-ink' : 'bg-white border-line'}`;
+    `shrink-0 whitespace-nowrap px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border-2 font-bold ${isActive ? 'bg-orange-soft border-ink' : 'bg-white border-line'}`;
   return (
-    <div className="grid gap-5">
-      <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-3xl mr-4">Shop</h1>
+    <div className="grid gap-4 sm:gap-5 min-w-0">
+      <div className="flex items-center gap-2 overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex-wrap [scrollbar-width:none]">
+        <h1 className="text-2xl sm:text-3xl mr-2 sm:mr-4 shrink-0">Shop</h1>
         <NavLink to="/admin/shop/orders" className={tab}>Orders</NavLink>
         <NavLink to="/admin/shop/products" className={tab}>Products</NavLink>
         <NavLink to="/admin/shop/customers" className={tab}>Customers</NavLink>

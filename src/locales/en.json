@@ -527,7 +527,8 @@
       "placeUpi": "Place order and pay by UPI",
       "agree1": "By placing the order you accept the",
       "agreeAnd": "and",
-      "agree2": "."
+      "agree2": ".",
+      "opening": "Order created. Opening the payment page…"
     },
     "err": {
       "BAD_NAME": "Please write your full name.",
@@ -595,17 +596,21 @@
       "upiChecking": "Thank you! We're checking the payment. Your order moves ahead as soon as we see it.",
       "upiRefShown": "Number you gave",
       "verifying": "Checking the payment",
-      "thanksPaid": "{{amt}} received. We'll send the parcel soon."
+      "thanksPaid": "{{amt}} received. We'll send the parcel soon.",
+      "comeBack": "You can check your order any time: Shop → “Where is my order?” → mobile number and pincode."
     },
     "mine": {
-      "title": "My orders",
-      "sub": "Orders placed from this phone.",
+      "title": "Where is my order?",
+      "sub": "See how far your order has come.",
       "none": "No orders from this phone yet.",
-      "find": "Ordered from another phone?",
-      "findSub": "Enter the order number and mobile number.",
+      "find": "Find orders by mobile number",
+      "findSub": "Enter the mobile number and pincode you gave when ordering.",
       "orderNo": "Order number (e.g. CK1024)",
-      "go": "Find order",
-      "notFound": "No such order. Please check the number and phone."
+      "go": "Show my orders",
+      "notFound": "No orders for this number and pincode. Use the same details you gave when ordering.",
+      "here": "Orders placed from this phone",
+      "pin": "Pincode",
+      "pinHint": "The 6-digit pincode of the delivery address"
     },
     "menuCart": "Cart",
     "menuOrders": "My orders",
@@ -619,6 +624,8 @@
     "notifyBad": "Please enter a 10-digit mobile number.",
     "notifyErr": "Couldn't save right now. Please try again in a little while.",
     "returnsShort": "Damaged or wrong item? Replaced or refunded within 7 days",
-    "sellerLine": "Sold by {{name}} · Country of origin: India"
+    "sellerLine": "Sold by {{name}} · Country of origin: India",
+    "addShort": "Add to cart",
+    "trackLink": "Where is my order?"
   }
 }

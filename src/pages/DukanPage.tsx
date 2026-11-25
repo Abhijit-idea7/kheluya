@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ShoppingCart, Truck } from 'lucide-react';
+import { Package, ShoppingCart, Truck } from 'lucide-react';
 import { getPublicSettings } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
 import { addToCart, getCatalog, imageUrl, money, pickLang, useCart, type Product } from '@/lib/shop';
@@ -48,6 +48,10 @@ export default function DukanPage() {
           <h1 className="text-heading-lg">{t('shop.title')}</h1>
           <p className="text-lg text-ink/75">{t('shop.sub')}</p>
         </div>
+        <Link to="/majhi-order" className="btn btn-quiet !min-h-[3rem] !text-lg">
+          <Package size={22} strokeWidth={2.6} aria-hidden="true" />
+          {t('shop.trackLink')}
+        </Link>
         {open && count > 0 && (
           <Link to="/pishvi" className="btn btn-primary">
             <ShoppingCart size={22} strokeWidth={2.6} aria-hidden="true" />
@@ -88,6 +92,7 @@ export default function DukanPage() {
 function ProductCard({ p, lang, open }: { p: Product; lang: 'mr' | 'en'; open: boolean }) {
   const { t } = useTranslation();
   const [added, setAdded] = useState(false);
+  const navigate = useNavigate();
   const soon = p.coming_soon || !open;
   const can = !soon && p.in_stock;
   const add = () => {
@@ -120,9 +125,15 @@ function ProductCard({ p, lang, open }: { p: Product; lang: 'mr' | 'en'; open: b
           <span className="text-base font-bold text-[#B42318]">{t('shop.few')}</span>
         ) : null}
         {can ? (
-          <button type="button" onClick={add} className={`btn w-full !min-h-[3.25rem] !text-lg !px-2 ${added ? 'btn-whatsapp' : 'btn-primary'}`}>
-            {added ? t('shop.added') : t('shop.add')}
-          </button>
+          <div className="grid gap-2 lg:grid-cols-2">
+            <button type="button" onClick={() => navigate(`/checkout?buy=${p.id}&qty=1`)} className="btn btn-primary w-full !min-h-[3.25rem] !text-lg !px-2 whitespace-nowrap">
+              {t('shop.buyNow')}
+            </button>
+            <button type="button" onClick={add} className={`btn w-full !min-h-[3.25rem] !text-lg !px-2 whitespace-nowrap ${added ? 'btn-whatsapp' : 'btn-quiet'}`}>
+              <ShoppingCart size={20} strokeWidth={2.6} aria-hidden="true" />
+              {added ? t('shop.added') : t('shop.addShort')}
+            </button>
+          </div>
         ) : (
           <div className="grid gap-2 lg:grid-cols-2">
             <InterestButton productName={p.name_mr} slug={p.slug} label={t('shop.interest')} className="w-full !min-h-[3.25rem] !text-lg !px-2 whitespace-nowrap" />

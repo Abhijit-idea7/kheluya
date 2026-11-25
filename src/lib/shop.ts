@@ -177,6 +177,14 @@ export async function getOrder(orderNo: string, key: string): Promise<Order | nu
   if (error) throw error;
   return one<Order>(data);
 }
+/** Orders for a mobile number + delivery pincode (the "where is my order" page). */
+export async function trackOrders(phone: string, pincode: string) {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('shop_track', { p_phone: phone, p_pincode: pincode });
+  if (error) throw error;
+  const v = one<{ order_no: string; access_key: string; status: string; total_paise: number; created_at: string }[]>(data);
+  return Array.isArray(v) ? v : [];
+}
 export async function ordersForPhone(phone: string, orderNo: string) {
   if (!supabase) return null;
   const { data, error } = await supabase.rpc('shop_orders_for_phone', { p_phone: phone, p_order_no: orderNo });

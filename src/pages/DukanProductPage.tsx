@@ -5,7 +5,7 @@ import { ArrowLeft, Minus, Plus, RotateCcw, ShoppingCart, Truck, Wallet } from '
 import { businessFrom } from '@/lib/business';
 import { getPublicSettings } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
-import { addToCart, getCatalog, imageUrl, money, pickLang, readCart, setQty } from '@/lib/shop';
+import { addToCart, getCatalog, imageUrl, money, pickLang } from '@/lib/shop';
 import Illustration from '@/components/Illustration';
 import InterestButton from '@/components/InterestButton';
 import { mrDigits } from '@/lib/dates';
@@ -44,11 +44,8 @@ export default function DukanProductPage() {
     setAdded(true);
     setTimeout(() => setAdded(false), 1800);
   };
-  const buyNow = () => {
-    const inCart = readCart().find((l) => l.id === p.id)?.qty ?? 0;
-    if (inCart < qty) setQty(p.id, qty, p.max_per_order);
-    navigate('/checkout');
-  };
+  // Buy just this item now (the cart is left as it is)
+  const buyNow = () => navigate(`/checkout?buy=${p.id}&qty=${qty}`);
   const specs = p.specs.filter((s) => (lang === 'en' ? s.label_en || s.label_mr : s.label_mr) && (s.value_mr || s.value_en));
 
   return (

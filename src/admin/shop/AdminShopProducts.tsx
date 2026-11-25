@@ -42,7 +42,26 @@ export default function AdminShopProducts() {
         <button className={btnPrimary} onClick={() => setEdit({ ...BLANK })}>+ New product</button>
       </div>
       {!prods ? <p className="animate-pulse">Loading…</p> : prods.length === 0 ? <Card>No products yet. Press “+ New product”.</Card> : (
-        <div className="overflow-x-auto rounded-2xl border-2 border-ink bg-paper">
+        <>
+        <ul className="grid gap-2 md:hidden">
+          {prods.map((p) => (
+            <li key={p.id}>
+              <button type="button" onClick={() => setEdit({ ...BLANK, ...p })} className="w-full text-left flex gap-3 rounded-2xl border-2 border-ink bg-paper p-2.5 active:bg-orange-soft/50">
+                {p.images[0] ? <img src={imageUrl(p.images[0])} alt="" className="w-14 shrink-0 aspect-[3/4] object-contain bg-white rounded-lg border border-line" /> : <span className="block w-14 shrink-0 aspect-[3/4] rounded-lg bg-cream" />}
+                <span className="min-w-0 flex-1">
+                  <b className="block leading-snug">{p.name_mr}</b>
+                  <span className="block text-sm text-ink/60 break-all">/{p.slug}</span>
+                  <span className="block mt-0.5 tabular-nums">{rs(p.price_paise)}{p.mrp_paise ? <s className="ml-1 text-ink/50">{rs(p.mrp_paise)}</s> : null} · GST {Number(p.gst_rate)}%</span>
+                  <span className="block text-sm">
+                    <span className={p.stock !== null && p.stock <= 5 ? 'font-bold text-[#8A1C14]' : ''}>Stock {p.stock ?? '∞'}</span> · Sold {p.sold ?? 0} ·{' '}
+                    <b>{p.is_active ? (p.coming_soon ? 'Coming soon' : 'On sale') : 'Hidden'}</b>
+                  </span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div className="hidden md:block overflow-x-auto rounded-2xl border-2 border-ink bg-paper">
           <table className="w-full text-left text-sm">
             <thead className="bg-cream"><tr>{['', 'Product', 'Category', 'Price', 'GST', 'Stock', 'Sold', 'Shown'].map((h) => <th key={h} className="p-2.5">{h}</th>)}</tr></thead>
             <tbody>
@@ -61,6 +80,7 @@ export default function AdminShopProducts() {
             </tbody>
           </table>
         </div>
+        </>
       )}
       <Categories cats={cats} onChanged={load} />
     </div>

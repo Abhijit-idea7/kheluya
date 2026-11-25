@@ -76,6 +76,7 @@ export default function OrderPage() {
         <div className="p-5 rounded-3xl border-[3px] border-green bg-green-soft text-center">
           <Illustration name="cheer" alt="" className="w-36 mx-auto mb-3" />
           <h1 className="text-heading-md">{t('shop.o.thanks')}</h1>
+          <p className="mt-2 text-lg">{t('shop.o.comeBack')}</p>
           {o.payment_method === 'cod' && <p className="mt-1 text-xl">{t('shop.o.thanksCod', { amt: money(o.total_paise, lang) })}</p>}
           {o.payment_method !== 'cod' && o.payment_status === 'paid' && <p className="mt-1 text-xl">{t('shop.o.thanksPaid', { amt: money(o.total_paise, lang) })}</p>}
         </div>

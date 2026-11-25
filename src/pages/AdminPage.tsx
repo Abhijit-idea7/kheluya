@@ -64,24 +64,27 @@ export default function AdminPage() {
     );
   }
 
+  return <AdminLayout onSignOut={() => supabase!.auth.signOut()} />;
+}
+
+/** The signed-in admin: menu across the top (scrolls sideways on a phone) and the admin screens. */
+export function AdminLayout({ onSignOut }: { onSignOut: () => void }) {
   const tab = ({ isActive }: { isActive: boolean }) =>
-    `px-3 py-2 rounded-xl font-bold ${isActive ? 'bg-orange-soft border-2 border-ink' : 'border-2 border-transparent hover:bg-cream'}`;
+    `shrink-0 whitespace-nowrap px-3 py-2 rounded-xl font-bold ${isActive ? 'bg-orange-soft border-2 border-ink' : 'border-2 border-transparent hover:bg-cream'}`;
 
   return (
     <Shell
+      onSignOut={onSignOut}
       nav={
-        <>
-          <nav className="flex flex-wrap gap-1">
-            <NavLink to="/admin/puzzles" className={tab}>Puzzles</NavLink>
-            <NavLink to="/admin/types" className={tab}>Puzzle types</NavLink>
-            <NavLink to="/admin/stats" className={tab}>Stats</NavLink>
-            <NavLink to="/admin/people" className={tab}>Subscribers &amp; messages</NavLink>
-            <NavLink to="/admin/notifications" className={tab}>Notifications</NavLink>
-            <NavLink to="/admin/shop" className={tab}>Shop</NavLink>
-            <NavLink to="/admin/settings" className={tab}>Settings</NavLink>
-          </nav>
-          <button className={`${btnQuiet} ml-auto`} onClick={() => supabase!.auth.signOut()}>Sign out</button>
-        </>
+        <nav className="flex gap-1 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap pb-1 sm:pb-0 [scrollbar-width:none]">
+          <NavLink to="/admin/shop" className={tab}>Shop</NavLink>
+          <NavLink to="/admin/puzzles" className={tab}>Puzzles</NavLink>
+          <NavLink to="/admin/stats" className={tab}>Stats</NavLink>
+          <NavLink to="/admin/people" className={tab}>People</NavLink>
+          <NavLink to="/admin/notifications" className={tab}>Notifications</NavLink>
+          <NavLink to="/admin/types" className={tab}>Puzzle types</NavLink>
+          <NavLink to="/admin/settings" className={tab}>Settings</NavLink>
+        </nav>
       }
     >
       <Routes>
@@ -101,20 +104,23 @@ export default function AdminPage() {
   );
 }
 
-function Shell({ children, nav }: { children: React.ReactNode; nav?: React.ReactNode }) {
+function Shell({ children, nav, onSignOut }: { children: React.ReactNode; nav?: React.ReactNode; onSignOut?: () => void }) {
   return (
     <div className="min-h-screen bg-cream text-base leading-normal">
       <header className="bg-paper border-b-[3px] border-ink">
-        <div className="max-w-site mx-auto px-4 py-2 flex flex-wrap items-center gap-3">
-          <a href="/" className="shrink-0">
-            <img src="/brand/logo-mark.webp" alt="चला खेळूया" width={250} height={80} className="h-10 w-auto" />
-          </a>
-          <span className="font-heading font-extrabold text-xl">Admin</span>
-          <span className="text-xs text-ink/55" title="When this version was built (India time)">Version {__BUILD_STAMP__}</span>
+        <div className="max-w-site mx-auto px-4 py-2 grid gap-2 lg:flex lg:items-center lg:gap-3">
+          <div className="flex items-center gap-3 lg:contents">
+            <a href="/" className="shrink-0">
+              <img src="/brand/logo-mark.webp" alt="चला खेळूया" width={250} height={80} className="h-9 sm:h-10 w-auto" />
+            </a>
+            <span className="font-heading font-extrabold text-xl">Admin</span>
+            <span className="hidden sm:inline text-xs text-ink/55" title="When this version was built (India time)">Version {__BUILD_STAMP__}</span>
+            {onSignOut && <button className={`${btnQuiet} !py-1 !px-3 !text-sm ml-auto lg:order-last`} onClick={onSignOut}>Sign out</button>}
+          </div>
           {nav}
         </div>
       </header>
-      <main className="max-w-site mx-auto px-4 py-6">{children}</main>
+      <main className="max-w-site mx-auto px-3 sm:px-4 py-4 sm:py-6">{children}</main>
     </div>
   );
 }

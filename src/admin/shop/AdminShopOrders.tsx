@@ -54,19 +54,36 @@ export default function AdminShopOrders() {
           {data.money.refund_due > 0 && <> · <b className="text-[#8A1C14]">refunds due {rs(data.money.refund_due)}</b></>}
         </p>
       )}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex gap-2 overflow-x-auto -mx-3 px-3 pb-1 sm:mx-0 sm:px-0 sm:flex-wrap [scrollbar-width:none]">
         {FILTERS.map(([k, label]) => (
-          <button key={k || 'all'} className={`${btnQuiet} !py-1 ${filter === k ? '!bg-orange-soft' : ''}`} onClick={() => setFilter(k)}>
+          <button key={k || 'all'} className={`${btnQuiet} !py-1 shrink-0 whitespace-nowrap ${filter === k ? '!bg-orange-soft' : ''}`} onClick={() => setFilter(k)}>
             {label}{k && k !== 'to_do' && c[k] ? ` (${c[k]})` : k === 'to_do' && todo ? ` (${todo})` : ''}
           </button>
         ))}
-        <form className="ml-auto flex gap-2" onSubmit={(e) => { e.preventDefault(); load(); }}>
-          <input className={`${input} !w-56 !py-1.5`} placeholder="Order no., phone, name or UPI no." value={search} onChange={(e) => setSearch(e.target.value)} />
-          <button className={`${btnQuiet} !py-1`}>Search</button>
-        </form>
       </div>
+      <form className="flex gap-2 sm:max-w-md" onSubmit={(e) => { e.preventDefault(); load(); }}>
+        <input className={`${input} !py-1.5 min-w-0`} type="search" placeholder="Order no., phone, name or UPI no." value={search} onChange={(e) => setSearch(e.target.value)} />
+        <button className={`${btnQuiet} !py-1 shrink-0`}>Search</button>
+      </form>
       {!data ? <p className="animate-pulse">Loading…</p> : data.orders.length === 0 ? <Card>No orders here.</Card> : (
-        <div className="overflow-x-auto rounded-2xl border-2 border-ink bg-paper">
+        <>
+        {/* Phones: one card per order */}
+        <ul className="grid gap-2 md:hidden">
+          {data.orders.map((o) => (
+            <li key={o.order_no}>
+              <button type="button" onClick={() => setOpen(o.order_no)} className="w-full text-left rounded-2xl border-2 border-ink bg-paper p-3 active:bg-orange-soft/50">
+                <div className="flex items-center gap-2">
+                  <b className="text-lg">{o.order_no}</b>
+                  <span className={`rounded-full px-2 py-0.5 text-sm font-bold ${STATUS_TONE[o.status] ?? ''}`}>{STATUS_LABEL[o.status] ?? o.status}</span>
+                  <b className="ml-auto text-lg tabular-nums">{rs(o.total_paise)}</b>
+                </div>
+                <div className="mt-1 text-base">{o.ship_name} · <span className="tabular-nums">{o.ship_phone}</span></div>
+                <div className="text-sm text-ink/65">{o.ship_city} · {o.items} item{o.items === 1 ? '' : 's'} · {PAY_LABEL[o.payment_status] ?? o.payment_status} · {when(o.created_at)}</div>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div className="hidden md:block overflow-x-auto rounded-2xl border-2 border-ink bg-paper">
           <table className="w-full text-left text-sm">
             <thead className="bg-cream"><tr>{['Order', 'When', 'Customer', 'Place', 'Items', 'Total', 'Payment', 'Status'].map((h) => <th key={h} className="p-2.5">{h}</th>)}</tr></thead>
             <tbody>
@@ -85,6 +102,7 @@ export default function AdminShopOrders() {
             </tbody>
           </table>
         </div>
+        </>
       )}
       {open && <OrderPanel orderNo={open} onClose={() => setOpen(null)} onChanged={load} />}
     </div>
@@ -97,6 +115,7 @@ function OrderPanel({ orderNo, onClose, onChanged }: { orderNo: string; onClose:
   const [busy, setBusy] = useState(false);
   const [ship, setShip] = useState({ courier: 'India Post', tracking_no: '', tracking_url: COURIERS['India Post'] });
   const [note, setNote] = useState('');
+  const [noteMsg, setNoteMsg] = useState('');
   const load = () => rpc<Detail>('admin_shop_order', { p_order_no: orderNo }).then((d) => { setO(d); setNote(d?.admin_note ?? ''); }).catch((e) => setErr(e.message));
   useEffect(() => {
     load();
@@ -133,23 +152,17 @@ function OrderPanel({ orderNo, onClose, onChanged }: { orderNo: string; onClose:
 
   const site = window.location.origin;
   const link = o ? `${site}/order/${o.order_no}?k=${o.access_key}` : '';
-  const waText = o
-    ? o.status === 'shipped'
-      ? `नमस्कार ${o.ship.name}, चला खेळूया कडून तुमची ऑर्डर ${o.order_no} पाठवली आहे.${o.courier ? ` ${o.courier}` : ''}${o.tracking_no ? ` ट्रॅकिंग नंबर: ${o.tracking_no}.` : ''} ऑर्डर पाहा: ${link}`
-      : o.status === 'delivered'
-        ? `नमस्कार ${o.ship.name}, तुमची ऑर्डर ${o.order_no} पोहोचली असेल अशी आशा आहे. चला खेळूया कडून खरेदी केल्याबद्दल मनःपूर्वक धन्यवाद! 🙏`
-        : o.status === 'pending_payment'
-          ? `नमस्कार ${o.ship.name}, चला खेळूया कडून तुमची ऑर्डर ${o.order_no} (${rs(o.total_paise)}) तयार आहे, पण पेमेंट अजून आलेले नाही. इथून पैसे भरा: ${link}`
-          : `नमस्कार ${o.ship.name}, चला खेळूया कडून तुमची ऑर्डर ${o.order_no} (${rs(o.total_paise)}) मिळाली आहे. लवकरच पाठवू. ऑर्डर पाहा: ${link}`
-    : '';
-  const wa = o ? `https://wa.me/91${o.ship.phone}?text=${encodeURIComponent(waText)}` : '';
+  const msgs = o ? customerMessages(o, link) : [];
+  const defaultMsg = o
+    ? o.status === 'pending_payment' ? 'pay' : o.status === 'shipped' ? 'shipped' : o.status === 'delivered' ? 'thanks' : o.status === 'cancelled' ? 'cancelled' : 'received'
+    : 'received';
   const next: Record<string, [string, string] | null> = { placed: ['confirm', 'Confirm order'], confirmed: ['pack', 'Mark packed'], packed: null, shipped: ['deliver', 'Mark delivered'] };
 
   return (
     <div className="fixed inset-0 z-50 bg-ink/50 flex justify-end" onClick={onClose}>
-      <div className="w-full max-w-2xl h-full overflow-y-auto bg-cream p-5 grid gap-4 content-start" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold mr-auto">Order {orderNo}</h2>
+      <div className="w-full max-w-2xl h-full overflow-y-auto overscroll-contain bg-cream px-3 pb-6 sm:px-5 grid grid-cols-[minmax(0,1fr)] gap-4 content-start [&>*]:min-w-0" onClick={(e) => e.stopPropagation()}>
+        <div className="sticky top-0 z-10 -mx-3 sm:-mx-5 px-3 sm:px-5 py-3 bg-cream border-b-2 border-ink/15 flex items-center gap-3">
+          <h2 className="text-xl sm:text-2xl font-bold mr-auto">Order {orderNo}</h2>
           <button className={btnQuiet} onClick={onClose}>Close</button>
         </div>
         {err && <p className="font-bold text-[#8A1C14]">{err}</p>}
@@ -181,7 +194,6 @@ function OrderPanel({ orderNo, onClose, onChanged }: { orderNo: string; onClose:
                 {o.payment_status === 'unpaid' && o.payment_method !== 'cod' && (o.status === 'pending_payment' || o.cancel_reason === 'expired') && (
                   <button className={btnQuiet} disabled={busy} onClick={markPaid}>Money received — mark paid</button>
                 )}
-                <a className={btnQuiet} href={wa} target="_blank" rel="noreferrer">WhatsApp the customer</a>
                 <a className={btnQuiet} href={`/order/${o.order_no}/invoice?k=${o.access_key}&label=1`} target="_blank" rel="noreferrer">Print address label</a>
                 {o.invoice_no && <a className={btnQuiet} href={`/order/${o.order_no}/invoice?k=${o.access_key}`} target="_blank" rel="noreferrer">Print invoice {o.invoice_no}</a>}
                 {!['cancelled', 'delivered'].includes(o.status) && <button className={btnDanger} disabled={busy} onClick={cancel}>Cancel order</button>}
@@ -211,6 +223,8 @@ function OrderPanel({ orderNo, onClose, onChanged }: { orderNo: string; onClose:
                 </div>
               )}
             </Card>
+
+            <MessageBox key={`${o.order_no}-${defaultMsg}`} msgs={msgs} initial={defaultMsg} phone={o.ship.phone} />
 
             <Card>
               <h3 className="font-bold mb-2">Items</h3>
@@ -250,12 +264,68 @@ function OrderPanel({ orderNo, onClose, onChanged }: { orderNo: string; onClose:
               <Field label="Private note (only you see this)" className="mt-3">
                 <textarea className={`${input} min-h-[4rem]`} value={note} onChange={(e) => setNote(e.target.value)} />
               </Field>
-              <button className={`${btnQuiet} mt-2`} onClick={() => act('note', { text: note })}>Save note</button>
+              <div className="mt-2 flex items-center gap-3">
+                <button className={btnQuiet} disabled={busy} onClick={async () => { setNoteMsg(''); await act('note', { text: note }); setNoteMsg('Saved ✓'); setTimeout(() => setNoteMsg(''), 3000); }}>Save note</button>
+                {noteMsg && <span role="status" className="font-bold text-green">{noteMsg}</span>}
+              </div>
               <p className="mt-3 text-xs text-ink/50 break-all">Customer’s order link: {link}</p>
             </Card>
           </>
         )}
       </div>
     </div>
+  );
+}
+
+type Msg = { id: string; label: string; text: string };
+
+/** Ready Marathi messages for each stage of an order, to copy or send on WhatsApp. */
+function customerMessages(o: Detail, link: string): Msg[] {
+  const hi = `नमस्कार ${o.ship.name},`;
+  const amt = rs(o.total_paise);
+  const list: Msg[] = [
+    { id: 'received', label: 'Order received', text: `${hi} चला खेळूया कडून तुमची ऑर्डर ${o.order_no} (${amt}) मिळाली आहे. २ कामकाजाच्या दिवसांत पार्सल पाठवू. ऑर्डर कुठे आहे ते इथे पाहा: ${link}` },
+    { id: 'pay', label: 'Payment reminder', text: `${hi} चला खेळूया कडून तुमची ऑर्डर ${o.order_no} (${amt}) तयार आहे, पण पेमेंट अजून आलेले नाही. इथून पैसे भरा: ${link}` },
+    { id: 'shipped', label: 'Sent (tracking)', text: `${hi} चला खेळूया कडून तुमची ऑर्डर ${o.order_no} पाठवली आहे.${o.courier ? ` ${o.courier}` : ''}${o.tracking_no ? ` ट्रॅकिंग नंबर: ${o.tracking_no}.` : ''} साधारण ३ ते ७ दिवसांत पोहोचेल. ऑर्डर पाहा: ${link}` },
+    { id: 'thanks', label: 'Delivered – thank you', text: `${hi} तुमची ऑर्डर ${o.order_no} पोहोचली असेल अशी आशा आहे. चला खेळूया कडून खरेदी केल्याबद्दल मनःपूर्वक धन्यवाद! 🙏 काही अडचण असल्यास याच नंबरवर कळवा.` },
+    { id: 'cancelled', label: 'Cancelled', text: `${hi} तुमची ऑर्डर ${o.order_no} रद्द झाली आहे.${o.cancel_reason && o.cancel_reason !== 'expired' ? ` कारण: ${o.cancel_reason}.` : ''}${o.payment_status === 'refund_due' || o.payment_status === 'refunded' ? ` भरलेले ${amt} ५ ते ७ कामकाजाच्या दिवसांत परत मिळतील.` : ''} काही प्रश्न असल्यास याच नंबरवर कळवा.` },
+  ];
+  if (o.payment_status === 'refunded') list.push({ id: 'refunded', label: 'Refund sent', text: `${hi} ऑर्डर ${o.order_no} चे ${amt} परत पाठवले आहेत. बँक खात्यात दिसायला १–२ दिवस लागू शकतात. धन्यवाद.` });
+  return list;
+}
+
+function MessageBox({ msgs, initial, phone }: { msgs: Msg[]; initial: string; phone: string }) {
+  const [id, setId] = useState(initial);
+  const [text, setText] = useState(() => msgs.find((m) => m.id === initial)?.text ?? msgs[0]?.text ?? '');
+  const [copied, setCopied] = useState(false);
+  const pick = (m: Msg) => { setId(m.id); setText(m.text); setCopied(false); };
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.getElementById('cust-msg') as HTMLTextAreaElement | null;
+      ta?.select();
+      document.execCommand?.('copy');
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+  const digits = phone.replace(/[^0-9]/g, '');
+  return (
+    <Card>
+      <h3 className="font-bold">Message for the customer</h3>
+      <p className="text-sm text-ink/60">Pick the stage, check the text, then Copy (paste it in any WhatsApp) or open WhatsApp directly.</p>
+      <div className="mt-2 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+        {msgs.map((m) => (
+          <button key={m.id} type="button" onClick={() => pick(m)} className={`${btnQuiet} !py-1 !px-3 !text-sm whitespace-nowrap shrink-0 ${id === m.id ? '!bg-orange-soft' : ''}`}>{m.label}</button>
+        ))}
+      </div>
+      <textarea id="cust-msg" className={`${input} mt-2 min-h-[8rem] !text-base leading-relaxed`} value={text} onChange={(e) => setText(e.target.value)} />
+      <div className="mt-2 grid grid-cols-2 gap-2 sm:flex">
+        <button type="button" className={btnPrimary} onClick={copy}>{copied ? 'Copied ✓' : 'Copy message'}</button>
+        <a className={btnQuiet} href={`https://wa.me/${digits.length === 10 ? `91${digits}` : digits}?text=${encodeURIComponent(text)}`} target="_blank" rel="noreferrer">Open in WhatsApp</a>
+      </div>
+      <p className="mt-1 text-sm text-ink/60">Customer’s number: <a className="underline" href={`tel:${digits}`}>{phone}</a></p>
+    </Card>
   );
 }
