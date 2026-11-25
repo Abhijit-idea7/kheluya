@@ -16,14 +16,15 @@ export type CartLine = { id: string; qty: number };
 export type Address = { line1: string; line2: string; landmark: string; city: string; state: string; pincode: string };
 export type Customer = { name: string; phone: string; email: string; address: Address };
 export type OrderItem = { name_mr: string; name_en: string; hsn: string; gst_rate: number; qty: number; unit_price_paise: number; line_total_paise: number; taxable_paise: number; tax_paise: number };
+export type Pay = 'razorpay' | 'upi' | 'cod';
 export type Order = {
-  order_no: string; access_key: string; status: string; payment_method: 'razorpay' | 'cod'; payment_status: string;
+  order_no: string; access_key: string; status: string; payment_method: Pay; payment_status: string;
   subtotal_paise: number; shipping_paise: number; total_paise: number; taxable_paise: number; cgst_paise: number; sgst_paise: number; igst_paise: number;
   created_at: string; paid_at: string | null; shipped_at: string | null; delivered_at: string | null;
   ship: Address & { name: string; phone: string };
   courier: string; tracking_no: string; tracking_url: string; invoice_no: string | null; invoice_date: string | null;
   seller: { name?: string; gstin?: string; address?: string; state?: string; phone?: string; email?: string };
-  cancel_reason: string; razorpay_payment_id: string | null; items: OrderItem[]; events: { status: string; note: string; at: string }[];
+  cancel_reason: string; razorpay_payment_id: string | null; upi_ref?: string | null; upi_submitted_at?: string | null; items: OrderItem[]; events: { status: string; note: string; at: string }[];
 };
 
 /** A single JSON value from an RPC (tolerating a one-row table shape). */
@@ -133,14 +134,14 @@ export function rememberOrder(order_no: string, key: string) {
 }
 
 // ---------- orders ----------
-export type PlaceResult = { order_no: string; access_key: string; total_paise: number; status: string; payment: 'razorpay' | 'cod' };
+export type PlaceResult = { order_no: string; access_key: string; total_paise: number; status: string; payment: Pay };
 /** Error codes from the database, e.g. OUT_OF_STOCK:<name> → { code, detail } */
 export function shopError(e: unknown): { code: string; detail: string } {
   const m = String((e as { message?: string })?.message ?? e ?? '');
   const hit = /([A-Z_]{4,})(?::(.*))?/.exec(m);
   return hit ? { code: hit[1], detail: (hit[2] ?? '').trim() } : { code: 'UNKNOWN', detail: m };
 }
-export async function placeOrder(c: Customer, lines: CartLine[], payment: 'razorpay' | 'cod', note: string): Promise<PlaceResult> {
+export async function placeOrder(c: Customer, lines: CartLine[], payment: Pay, note: string): Promise<PlaceResult> {
   if (!supabase) throw new Error('OFFLINE');
   const { data, error } = await supabase.rpc('shop_place_order', {
     p: {
@@ -157,6 +158,19 @@ export async function placeOrder(c: Customer, lines: CartLine[], payment: 'razor
   rememberOrder(r.order_no, r.access_key);
   return r;
 }
+/** After paying by UPI the customer types the reference number; the owner then checks it. */
+export async function submitUpiRef(orderNo: string, key: string, ref: string): Promise<void> {
+  if (!supabase) throw new Error('OFFLINE');
+  const { error } = await supabase.rpc('shop_upi_submit', { p_order_no: orderNo, p_key: key, p_ref: ref });
+  if (error) throw error;
+}
+
+/** UPI payment link: opens Google Pay / PhonePe / Paytm with the amount filled in. */
+export function upiLink(upiId: string, payee: string, paise: number, orderNo: string): string {
+  const q = new URLSearchParams({ pa: upiId, pn: payee || 'Chala Kheluya', am: (paise / 100).toFixed(2), cu: 'INR', tn: `Order ${orderNo}` });
+  return `upi://pay?${q.toString().replace(/\+/g, '%20').replace(/%40/g, '@')}`;
+}
+
 export async function getOrder(orderNo: string, key: string): Promise<Order | null> {
   if (!supabase) return null;
   const { data, error } = await supabase.rpc('shop_get_order', { p_order_no: orderNo, p_key: key });

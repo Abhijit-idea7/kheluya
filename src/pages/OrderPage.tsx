@@ -8,6 +8,7 @@ import { getOrder, money, payOnline, pickLang, rememberOrder, STEPS, type Order 
 import { mrDigits, prettyDate } from '@/lib/dates';
 import FormField, { inputClass } from '@/components/FormField';
 import Illustration from '@/components/Illustration';
+import UpiPay from '@/components/UpiPay';
 
 /** One order for the customer: status steps, payment, items, address, tracking, invoice. Opened with the link key or phone. */
 export default function OrderPage() {
@@ -66,7 +67,7 @@ export default function OrderPage() {
   const sellerPhone = String(settings?.seller_phone ?? '').replace(/[^0-9]/g, '');
   const help = sellerPhone ? `https://wa.me/${sellerPhone.length === 10 ? `91${sellerPhone}` : sellerPhone}?text=${encodeURIComponent(`नमस्कार, माझी ऑर्डर ${o.order_no} बद्दल विचारायचे आहे.`)}` : '';
   const payLabel: Record<string, string> = {
-    paid: t('shop.o.paid'), cod_pending: t('shop.o.codPending'), cod_collected: t('shop.o.codDone'), refund_due: t('shop.o.refundDue'), refunded: t('shop.o.refunded'),
+    paid: t('shop.o.paid'), verifying: t('shop.o.verifying'), cod_pending: t('shop.o.codPending'), cod_collected: t('shop.o.codDone'), refund_due: t('shop.o.refundDue'), refunded: t('shop.o.refunded'),
   };
 
   return (
@@ -76,6 +77,7 @@ export default function OrderPage() {
           <Illustration name="cheer" alt="" className="w-36 mx-auto mb-3" />
           <h1 className="text-heading-md">{t('shop.o.thanks')}</h1>
           {o.payment_method === 'cod' && <p className="mt-1 text-xl">{t('shop.o.thanksCod', { amt: money(o.total_paise, lang) })}</p>}
+          {o.payment_method !== 'cod' && o.payment_status === 'paid' && <p className="mt-1 text-xl">{t('shop.o.thanksPaid', { amt: money(o.total_paise, lang) })}</p>}
         </div>
       )}
 
@@ -84,7 +86,10 @@ export default function OrderPage() {
         <span className="text-lg text-ink/70">{t('shop.o.placedOn')}: {prettyDate(new Date(new Date(o.created_at).getTime() + 330 * 60000).toISOString(), lang)}</span>
       </div>
 
-      {o.status === 'pending_payment' && (
+      {o.status === 'pending_payment' && o.payment_method === 'upi' && (
+        <UpiPay o={o} upiId={String(settings?.upi_id ?? '')} payee={String(settings?.upi_name || settings?.seller_name || 'Chala Kheluya')} onDone={() => setReload((n) => n + 1)} />
+      )}
+      {o.status === 'pending_payment' && o.payment_method !== 'upi' && (
         <div className="p-4 rounded-2xl border-[3px] border-ink bg-orange-soft">
           <p className="text-lg font-bold">{t('shop.o.payPending')}</p>
           <button onClick={pay} disabled={paying} className="btn btn-primary w-full mt-3">{paying ? t('shop.co.placing') : t('shop.o.payNow', { amt: money(o.total_paise, lang) })}</button>

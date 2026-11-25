@@ -7,7 +7,7 @@ import { getPublicSettings } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
 import {
   clearCart, getCatalog, money, payOnline, pickLang, placeOrder, savedCustomer, saveCustomer, shopError, STATES, STATES_MR, useCart,
-  type Customer,
+  type Customer, type Pay,
 } from '@/lib/shop';
 import { mrDigits } from '@/lib/dates';
 
@@ -27,7 +27,7 @@ export default function CheckoutPage() {
     const saved = savedCustomer();
     return saved ? { ...EMPTY, ...saved, address: { ...EMPTY.address, ...saved.address } } : EMPTY;
   });
-  const [pay, setPay] = useState<'razorpay' | 'cod' | ''>('');
+  const [pay, setPay] = useState<Pay | ''>('');
   const [note, setNote] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -36,12 +36,13 @@ export default function CheckoutPage() {
   const s = data.s;
   const open = s.shop_selling === true;
   const onlineOn = typeof s.razorpay_key_id === 'string' && s.razorpay_key_id.length > 5;
+  const upiOn = s.upi_direct === true && /^[A-Za-z0-9._-]{2,}@[A-Za-z0-9.]{2,}$/.test(String(s.upi_id ?? ''));
   const codOn = s.cash_on_delivery === true;
   const codMax = Number(s.cod_max_rupees ?? 2000) * 100;
   const lines = cart.map((l) => ({ ...l, p: data.c.products.find((p) => p.id === l.id) })).filter((l) => l.p);
   const total = lines.reduce((sum, l) => sum + l.p!.price_paise * l.qty, 0);
   const codOk = codOn && total <= codMax;
-  const method = pay || (onlineOn ? 'razorpay' : codOk ? 'cod' : '');
+  const method: Pay | '' = pay || (onlineOn ? 'razorpay' : upiOn ? 'upi' : codOk ? 'cod' : '');
 
   if (!open) return <p className="max-w-xl mx-auto px-4 py-10 text-xl">{t('shop.co.closed')}</p>;
   if (!lines.length) {
@@ -87,7 +88,7 @@ export default function CheckoutPage() {
     }
   };
 
-  const radio = (value: 'razorpay' | 'cod', label: string, hint: string, disabled = false, extra = '') => (
+  const radio = (value: Pay, label: string, hint: string, disabled = false, extra = '') => (
     <label className={`flex items-start gap-3 p-4 rounded-2xl border-[3px] ${disabled ? 'border-line opacity-60' : 'border-ink'} ${method === value ? 'bg-orange-soft' : 'bg-paper'}`}>
       <input type="radio" name="pay" className="mt-1 h-6 w-6 accent-[#F39200]" checked={method === value} disabled={disabled} onChange={() => setPay(value)} />
       <span>
@@ -131,6 +132,7 @@ export default function CheckoutPage() {
         <fieldset className="grid gap-3">
           <legend className="font-heading font-extrabold text-2xl mb-1">{t('shop.co.pay')}</legend>
           {onlineOn && radio('razorpay', t('shop.co.online'), t('shop.co.onlineHint'))}
+          {upiOn && radio('upi', t('shop.co.upi'), t('shop.co.upiHint'))}
           {codOn && radio('cod', t('shop.co.cod'), t('shop.co.codHint'), !codOk, codOk ? '' : t('shop.co.codLimit', { amt: money(codMax, lang) }))}
         </fieldset>
 
@@ -152,7 +154,7 @@ export default function CheckoutPage() {
         {err && <p role="alert" className="text-lg font-bold text-[#B42318]">{err}</p>}
         <button type="submit" disabled={busy} className="btn btn-primary w-full !min-h-[4.5rem] !text-[1.45rem]">
           <Check size={26} strokeWidth={3} aria-hidden="true" />
-          {busy ? t('shop.co.placing') : method === 'razorpay' ? t('shop.co.placePay', { amt: money(total, lang) }) : t('shop.co.place')}
+          {busy ? t('shop.co.placing') : method === 'razorpay' ? t('shop.co.placePay', { amt: money(total, lang) }) : method === 'upi' ? t('shop.co.placeUpi') : t('shop.co.place')}
         </button>
         <p className="-mt-3 text-base text-ink/65">{t('shop.co.remember')}</p>
       </form>

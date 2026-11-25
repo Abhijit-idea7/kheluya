@@ -520,7 +520,10 @@
       "placePay": "Pay {{amt}} and confirm",
       "placing": "Please wait…",
       "remember": "These details will be remembered on this phone for next time.",
-      "closed": "The shop is closed right now. It opens in a few days."
+      "closed": "The shop is closed right now. It opens in a few days.",
+      "upi": "Pay now by UPI",
+      "upiHint": "Straight to our account with Google Pay, PhonePe or Paytm.",
+      "placeUpi": "Place order and pay by UPI"
     },
     "err": {
       "BAD_NAME": "Please write your full name.",
@@ -536,7 +539,11 @@
       "SHOP_CLOSED": "The shop is closed right now.",
       "EMPTY_CART": "Your cart is empty.",
       "UNKNOWN": "Something went wrong. Please try again in a little while.",
-      "PAY": "Couldn't start the payment. Your order is saved — pay from the order page in a little while."
+      "PAY": "Couldn't start the payment. Your order is saved — pay from the order page in a little while.",
+      "UPI_OFF": "UPI payment is not available right now.",
+      "BAD_REF": "Please type the 12-digit reference number from your UPI app.",
+      "ORDER_CLOSED": "This order is closed now. Please contact us on WhatsApp.",
+      "NOT_FOUND": "Order not found."
     },
     "o": {
       "thanks": "Thank you! We've received your order.",
@@ -553,7 +560,7 @@
       "s_cancelled": "Cancelled",
       "payNow": "Pay {{amt}} now",
       "payPending": "Payment isn't done yet. Pay within 45 minutes or the order is cancelled.",
-      "paid": "Paid online ✓",
+      "paid": "Paid ✓",
       "codPending": "Pay cash on delivery",
       "codDone": "Cash received ✓",
       "refundDue": "Your money will be refunded",
@@ -567,7 +574,24 @@
       "ask": "Enter the mobile number used for this order",
       "show": "Show order",
       "wrong": "That number doesn't match. Use the number given with the order.",
-      "cancelled": "This order was cancelled."
+      "cancelled": "This order was cancelled.",
+      "upiTitle": "Pay {{amt}} by UPI",
+      "upiDeadline": "After paying, type the reference number below. If the money doesn't arrive within 24 hours, the order is cancelled.",
+      "upiStep1": "1. Pay",
+      "upiApp": "Open your UPI app and pay {{amt}}",
+      "upiOr": "Or scan this QR with another phone, or send the money to the UPI ID.",
+      "upiTo": "Name",
+      "upiAmount": "Amount",
+      "copy": "Copy",
+      "copied": "Copied ✓",
+      "upiStep2": "2. After paying",
+      "upiRefLabel": "UPI reference number (UTR / Transaction ID)",
+      "upiRefHint": "The 12-digit number your app shows after the payment.",
+      "upiRefBtn": "I've paid — send the number",
+      "upiChecking": "Thank you! We're checking the payment. Your order moves ahead as soon as we see it.",
+      "upiRefShown": "Number you gave",
+      "verifying": "Checking the payment",
+      "thanksPaid": "{{amt}} received. We'll send the parcel soon."
     },
     "mine": {
       "title": "My orders",

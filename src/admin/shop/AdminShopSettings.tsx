@@ -4,7 +4,7 @@ import { btnPrimary, btnQuiet, Card, Field, input } from '@/admin/ui';
 import { rpc } from '@/admin/shop/rpc';
 import { STATES } from '@/lib/shop';
 
-const KEYS = ['shop_selling', 'cash_on_delivery', 'cod_max_rupees', 'seller_name', 'seller_gstin', 'seller_address', 'seller_state', 'seller_phone', 'seller_email', 'invoice_prefix', 'razorpay_key_id'] as const;
+const KEYS = ['shop_selling', 'cash_on_delivery', 'cod_max_rupees', 'seller_name', 'seller_gstin', 'seller_address', 'seller_state', 'seller_phone', 'seller_email', 'invoice_prefix', 'razorpay_key_id', 'upi_direct', 'upi_id', 'upi_name'] as const;
 
 /** Shop settings: open/close, payments, the seller details printed on GST invoices, Razorpay keys. */
 export default function AdminShopSettings() {
@@ -24,9 +24,10 @@ export default function AdminShopSettings() {
     setMsg('');
     const gstin = s('seller_gstin').trim().toUpperCase();
     if (gstin && !/^[0-9]{2}[A-Z0-9]{13}$/.test(gstin)) return setMsg('The GSTIN should be 15 characters, like 27ABCDE1234F1Z5.');
+    if (v.upi_direct === true && !upiOk) return setMsg('Type a UPI ID like chalakheluya@okaxis before switching UPI on.');
     const rows = KEYS.map((key) => ({
       key,
-      value: key === 'shop_selling' || key === 'cash_on_delivery' ? v[key] === true : key === 'cod_max_rupees' ? Number(v[key] ?? 2000) || 2000 : key === 'seller_gstin' ? gstin : String(v[key] ?? '').trim(),
+      value: key === 'shop_selling' || key === 'cash_on_delivery' || key === 'upi_direct' ? v[key] === true : key === 'cod_max_rupees' ? Number(v[key] ?? 2000) || 2000 : key === 'seller_gstin' ? gstin : String(v[key] ?? '').trim(),
     }));
     const { error } = await supabase!.from('site_settings').upsert(rows, { onConflict: 'key' });
     if (error) return setMsg(error.message);
@@ -41,6 +42,7 @@ export default function AdminShopSettings() {
     }
     setMsg('Saved ✓');
   };
+  const upiOk = /^[A-Za-z0-9._-]{2,}@[A-Za-z0-9.]{2,}$/.test(s('upi_id'));
   const ready = !!s('seller_name') && !!s('seller_state') && !!s('seller_address');
   const onlineReady = s('razorpay_key_id').length > 5 && sec?.key_secret;
 
@@ -52,9 +54,9 @@ export default function AdminShopSettings() {
           <input type="checkbox" className="h-6 w-6 accent-[#2E8A3E]" checked={v.shop_selling === true} onChange={(e) => set('shop_selling', e.target.checked)} />
           Selling is switched on (the shop shows products and takes orders)
         </label>
-        <p className="text-sm text-ink/60">When off, the shop page shows the “tell me when the book is ready” form instead.</p>
+        <p className="text-sm text-ink/60">When off, products still show on the shop page as “coming soon”, with a “मला कळवा” button instead of add-to-cart.</p>
         {!ready && <p className="font-bold text-[#8A1C14]">Fill in the seller details below before switching selling on — they are printed on every GST invoice.</p>}
-        {!onlineReady && v.cash_on_delivery !== true && <p className="font-bold text-[#8A1C14]">Turn on at least one way to pay: Razorpay keys or cash on delivery.</p>}
+        {!onlineReady && v.cash_on_delivery !== true && !(v.upi_direct === true && upiOk) && <p className="font-bold text-[#8A1C14]">Turn on at least one way to pay: UPI to the shop, cash on delivery, or Razorpay.</p>}
       </Card>
 
       <Card className="grid gap-3">
@@ -64,6 +66,24 @@ export default function AdminShopSettings() {
           Offer cash on delivery
         </label>
         <Field label="Cash on delivery: largest order (₹)"><input className={`${input} !w-40`} inputMode="numeric" value={s('cod_max_rupees')} onChange={(e) => set('cod_max_rupees', e.target.value)} /></Field>
+        <div className="border-t border-line pt-3 grid gap-3">
+          <p className="font-bold">UPI straight to the shop {v.upi_direct === true && upiOk ? <span className="text-green">— on ✓</span> : <span className="text-ink/60">— off</span>}</p>
+          <p className="text-sm text-ink/60">
+            For now, before Razorpay is active. The customer pays your UPI ID from Google Pay / PhonePe / Paytm (a button on their phone, or a QR code),
+            then types the 12-digit UPI reference number. You check it in your bank app and press “Payment received” on the order. No fees.
+            Use a business UPI ID (from your current account, or Google Pay / PhonePe for Business) — some apps limit payments to personal UPI IDs from a link.
+          </p>
+          <label className="flex items-center gap-3 text-lg">
+            <input type="checkbox" className="h-6 w-6 accent-[#2E8A3E]" checked={v.upi_direct === true} onChange={(e) => set('upi_direct', e.target.checked)} />
+            Offer “Pay by UPI” at checkout
+          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="UPI ID (like chalakheluya@okaxis)"><input className={input} value={s('upi_id')} onChange={(e) => set('upi_id', e.target.value.trim())} /></Field>
+            <Field label="Name shown to the customer" hint="The account name, as the UPI app will show it"><input className={input} value={s('upi_name')} onChange={(e) => set('upi_name', e.target.value)} /></Field>
+          </div>
+          {s('upi_id') && !upiOk && <p className="font-bold text-[#8A1C14]">That doesn’t look like a UPI ID — it should be like name@bank.</p>}
+          {upiOk && <a className={`${btnQuiet} justify-self-start !py-1`} href={`upi://pay?pa=${encodeURIComponent(s('upi_id'))}&pn=${encodeURIComponent(s('upi_name') || 'Chala Kheluya')}&am=1.00&cu=INR&tn=Test`}>Test: pay ₹1 to this UPI ID (open on your phone)</a>}
+        </div>
         <div className="border-t border-line pt-3 grid gap-3">
           <p className="font-bold">Razorpay (UPI, cards, netbanking) {onlineReady ? <span className="text-green">— ready ✓</span> : <span className="text-[#8A1C14]">— not set up</span>}</p>
           <p className="text-sm text-ink/60">In Razorpay: Account &amp; Settings → API Keys. Use the Test keys first, then the Live keys once Razorpay activates your account.</p>

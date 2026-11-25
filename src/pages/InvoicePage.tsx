@@ -59,7 +59,7 @@ export default function InvoicePage() {
             <p><b>Invoice no:</b> {o.invoice_no}</p>
             <p><b>Invoice date:</b> {o.invoice_date}</p>
             <p><b>Order no:</b> {o.order_no}</p>
-            <p><b>Payment:</b> {o.payment_method === 'cod' ? 'Cash on delivery' : `Online${o.razorpay_payment_id ? ` (${o.razorpay_payment_id})` : ''}`}</p>
+            <p><b>Payment:</b> {o.payment_method === 'cod' ? 'Cash on delivery' : o.payment_method === 'upi' ? `UPI${o.upi_ref ? ` (Ref. ${o.upi_ref})` : ''}` : `Online${o.razorpay_payment_id ? ` (${o.razorpay_payment_id})` : ''}`}</p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4 py-3 border-b border-black">

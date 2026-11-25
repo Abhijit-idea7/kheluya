@@ -16,8 +16,9 @@ export const STATUS_LABEL: Record<string, string> = {
   pending_payment: 'Awaiting payment', placed: 'New', confirmed: 'Confirmed', packed: 'Packed', shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled',
 };
 export const PAY_LABEL: Record<string, string> = {
-  unpaid: 'Unpaid', paid: 'Paid online', cod_pending: 'COD – to collect', cod_collected: 'COD – collected', refund_due: 'Refund due', refunded: 'Refunded',
+  unpaid: 'Unpaid', verifying: 'UPI – check payment', paid: 'Paid', cod_pending: 'COD – to collect', cod_collected: 'COD – collected', refund_due: 'Refund due', refunded: 'Refunded',
 };
+export const METHOD_LABEL: Record<string, string> = { razorpay: 'Online (Razorpay)', upi: 'UPI to shop', cod: 'Cash on delivery' };
 export const STATUS_TONE: Record<string, string> = {
   pending_payment: 'bg-cream text-ink/70', placed: 'bg-orange text-ink', confirmed: 'bg-orange-soft', packed: 'bg-orange-soft',
   shipped: 'bg-[#E3EEFB] text-[#0C447C]', delivered: 'bg-green-soft text-[#1F5E2A]', cancelled: 'bg-[#FDECEA] text-[#8A1C14]',
