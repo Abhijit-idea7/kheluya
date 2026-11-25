@@ -19,8 +19,8 @@
   "footer": {
     "privacy": "Privacy Policy",
     "terms": "Terms & Conditions",
-    "shipping": "Shipping Policy",
-    "refunds": "Refund Policy",
+    "shipping": "Delivery policy",
+    "refunds": "Cancellation & refunds",
     "siteLine": "chalakheluya.com · kheluya.in",
     "howToPlay": "How to play",
     "families": "For families",
@@ -115,11 +115,11 @@
     },
     "amchyabaddal": {
       "heading": "About Us",
-      "description": "Who makes Chala Kheluya, why, and what we aim to do."
+      "description": "A new Marathi puzzle every morning — in big letters, on your phone."
     },
     "sampark": {
       "heading": "Contact",
-      "description": "Ways to reach us — phone, email and address."
+      "description": "Questions, suggestions or a problem with an order — talk to us on WhatsApp, phone or email, or write below."
     },
     "suchana": {
       "heading": "Suggest New Puzzles",
@@ -271,7 +271,8 @@
     "phone": "Phone number",
     "phoneHint": "If you would like a reply",
     "send": "Send message",
-    "thanks": "Message received. Thank you! We'll reply soon."
+    "thanks": "Message received. Thank you! We'll reply soon.",
+    "formTitle": "Write to us here"
   },
   "time": {
     "yours": "Your time: {{t}}",
@@ -523,7 +524,10 @@
       "closed": "The shop is closed right now. It opens in a few days.",
       "upi": "Pay now by UPI",
       "upiHint": "Straight to our account with Google Pay, PhonePe or Paytm.",
-      "placeUpi": "Place order and pay by UPI"
+      "placeUpi": "Place order and pay by UPI",
+      "agree1": "By placing the order you accept the",
+      "agreeAnd": "and",
+      "agree2": "."
     },
     "err": {
       "BAD_NAME": "Please write your full name.",
@@ -613,6 +617,8 @@
     "notifyBtn": "Notify me",
     "notifyDone": "Thank you! We'll message you on WhatsApp as soon as it's available.",
     "notifyBad": "Please enter a 10-digit mobile number.",
-    "notifyErr": "Couldn't save right now. Please try again in a little while."
+    "notifyErr": "Couldn't save right now. Please try again in a little while.",
+    "returnsShort": "Damaged or wrong item? Replaced or refunded within 7 days",
+    "sellerLine": "Sold by {{name}} · Country of origin: India"
   }
 }

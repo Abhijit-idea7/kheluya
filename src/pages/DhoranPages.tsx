@@ -1,39 +1,15 @@
-import { useTranslation } from 'react-i18next';
-import PageShell from '@/components/PageShell';
+import LegalPage from '@/components/LegalPage';
+import { PRIVACY, REFUNDS, SHIPPING, TERMS } from '@/content/legal';
 
 export function DhoranPrivacyPage() {
-  const { t } = useTranslation();
-  return (
-    <PageShell
-      title={t('dhoran.privacy.heading')}
-      description={t('dhoran.privacy.description')}
-    />
-  );
+  return <LegalPage doc={PRIVACY} path="/dhoran/privacy" />;
 }
-
 export function DhoranTermsPage() {
-  const { t } = useTranslation();
-  return (
-    <PageShell title={t('dhoran.terms.heading')} description={t('dhoran.terms.description')} />
-  );
+  return <LegalPage doc={TERMS} path="/dhoran/terms" />;
 }
-
 export function DhoranShippingPage() {
-  const { t } = useTranslation();
-  return (
-    <PageShell
-      title={t('dhoran.shipping.heading')}
-      description={t('dhoran.shipping.description')}
-    />
-  );
+  return <LegalPage doc={SHIPPING} path="/dhoran/shipping" />;
 }
-
 export function DhoranRefundsPage() {
-  const { t } = useTranslation();
-  return (
-    <PageShell
-      title={t('dhoran.refunds.heading')}
-      description={t('dhoran.refunds.description')}
-    />
-  );
+  return <LegalPage doc={REFUNDS} path="/dhoran/refunds" />;
 }

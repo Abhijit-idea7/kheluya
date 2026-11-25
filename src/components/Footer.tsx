@@ -4,6 +4,7 @@ import { Facebook, Instagram, MessageCircle } from 'lucide-react';
 import { getPublicSettings } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
 import { communityLinkFrom } from '@/lib/community';
+import { businessFrom } from '@/lib/business';
 
 const explore = [
   { to: '/kodi', key: 'nav.kodi' },
@@ -59,7 +60,7 @@ export default function Footer() {
         </nav>
       </div>
       <div className="border-t border-white/15">
-        <p className="max-w-site mx-auto px-5 py-3 text-sm text-white/60">{t('footer.siteLine')}</p>
+        <LegalLine />
       </div>
     </footer>
   );
@@ -92,6 +93,28 @@ function SocialLinks() {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/** Who runs the site, with address and GSTIN — required on every page of a shop (from Admin → Shop settings). */
+function LegalLine() {
+  const { t } = useTranslation();
+  const { data } = useAsync(() => getPublicSettings(), []);
+  const b = data ? businessFrom(data) : null;
+  const addr = b?.address.replace(/,?\s*\n\s*/g, ', ');
+  return (
+    <div className="max-w-site mx-auto px-5 py-3 text-sm text-white/60 grid gap-0.5">
+      <p>{t('footer.siteLine')}</p>
+      {b && (
+        <p>
+          © {new Date().getFullYear()} {b.name}
+          {addr ? ` · ${addr}` : ''}
+          {b.gstin ? ` · GSTIN ${b.gstin}` : ''}
+          {b.email ? ` · ${b.email}` : ''}
+          {b.phone ? ` · ${b.phone}` : ''}
+        </p>
+      )}
     </div>
   );
 }

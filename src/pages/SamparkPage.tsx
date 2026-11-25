@@ -4,6 +4,7 @@ import { Send } from 'lucide-react';
 import PageShell from '@/components/PageShell';
 import FormField, { inputClass } from '@/components/FormField';
 import { addContactMessage } from '@/lib/api';
+import BusinessDetails from '@/components/BusinessDetails';
 
 export default function SamparkPage() {
   const { t } = useTranslation();
@@ -26,10 +27,12 @@ export default function SamparkPage() {
 
   return (
     <PageShell title={t('pages.sampark.heading')} description={t('pages.sampark.description')}>
+      <div className="mt-6"><BusinessDetails /></div>
+      <h2 className="mt-8 text-heading-sm">{t('sampark.formTitle')}</h2>
       {status === 'done' ? (
-        <p role="status" className="mt-8 sticker p-6 text-xl font-bold">{t('sampark.thanks')}</p>
+        <p role="status" className="mt-4 sticker p-6 text-xl font-bold">{t('sampark.thanks')}</p>
       ) : (
-        <form onSubmit={submit} className="mt-8 grid gap-6">
+        <form onSubmit={submit} className="mt-4 grid gap-6">
           <FormField label={t('sampark.message')}>
             <textarea className={`${inputClass} min-h-[10rem]`} value={message} onChange={(e) => setMessage(e.target.value)} required />
           </FormField>

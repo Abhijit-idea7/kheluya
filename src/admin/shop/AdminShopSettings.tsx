@@ -4,7 +4,7 @@ import { btnPrimary, btnQuiet, Card, Field, input } from '@/admin/ui';
 import { rpc } from '@/admin/shop/rpc';
 import { STATES } from '@/lib/shop';
 
-const KEYS = ['shop_selling', 'cash_on_delivery', 'cod_max_rupees', 'seller_name', 'seller_gstin', 'seller_address', 'seller_state', 'seller_phone', 'seller_email', 'invoice_prefix', 'razorpay_key_id', 'upi_direct', 'upi_id', 'upi_name'] as const;
+const KEYS = ['shop_selling', 'cash_on_delivery', 'cod_max_rupees', 'seller_name', 'seller_gstin', 'seller_address', 'seller_state', 'seller_phone', 'seller_email', 'invoice_prefix', 'razorpay_key_id', 'upi_direct', 'upi_id', 'upi_name', 'grievance_name', 'support_hours', 'jurisdiction_city'] as const;
 
 /** Shop settings: open/close, payments, the seller details printed on GST invoices, Razorpay keys. */
 export default function AdminShopSettings() {
@@ -107,9 +107,10 @@ export default function AdminShopSettings() {
       </Card>
 
       <Card className="grid gap-3">
-        <h2 className="text-xl font-bold">Seller details (printed on GST invoices)</h2>
+        <h2 className="text-xl font-bold">Business details</h2>
+        <p className="text-sm text-ink/60 -mt-2">Printed on GST invoices, and shown on the Contact, About and policy pages and at the bottom of every page (the law asks an online shop to show these). Use the legal name as on your GST registration.</p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Business name"><input className={input} value={s('seller_name')} onChange={(e) => set('seller_name', e.target.value)} /></Field>
+          <Field label="Business name (legal name)"><input className={input} value={s('seller_name')} onChange={(e) => set('seller_name', e.target.value)} /></Field>
           <Field label="GSTIN"><input className={input} value={s('seller_gstin')} onChange={(e) => set('seller_gstin', e.target.value.toUpperCase())} /></Field>
           <Field label="State (decides CGST+SGST or IGST)">
             <select className={input} value={s('seller_state')} onChange={(e) => set('seller_state', e.target.value)}>
@@ -121,7 +122,12 @@ export default function AdminShopSettings() {
           <Field label="Phone (also the customers’ WhatsApp help number)"><input className={input} value={s('seller_phone')} onChange={(e) => set('seller_phone', e.target.value)} /></Field>
           <Field label="Email"><input className={input} value={s('seller_email')} onChange={(e) => set('seller_email', e.target.value)} /></Field>
         </div>
-        <Field label="Address"><textarea className={`${input} min-h-[5rem]`} value={s('seller_address')} onChange={(e) => set('seller_address', e.target.value)} /></Field>
+        <Field label="Address (with city and pincode)"><textarea className={`${input} min-h-[5rem]`} value={s('seller_address')} onChange={(e) => set('seller_address', e.target.value)} /></Field>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Field label="Grievance officer (name)" hint="The person customers can complain to — usually the owner"><input className={input} value={s('grievance_name')} onChange={(e) => set('grievance_name', e.target.value)} /></Field>
+          <Field label="Customer care hours" hint="e.g. सोम–शनि, सकाळी १० ते संध्या ६"><input className={input} value={s('support_hours')} onChange={(e) => set('support_hours', e.target.value)} /></Field>
+          <Field label="City for legal disputes" hint="Courts at this city (blank = Vadodara)"><input className={input} value={s('jurisdiction_city')} onChange={(e) => set('jurisdiction_city', e.target.value)} /></Field>
+        </div>
       </Card>
 
       <div className="flex items-center gap-3">

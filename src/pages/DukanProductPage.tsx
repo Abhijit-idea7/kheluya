@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Minus, Plus, ShoppingCart, Truck, Wallet } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, RotateCcw, ShoppingCart, Truck, Wallet } from 'lucide-react';
+import { businessFrom } from '@/lib/business';
 import { getPublicSettings } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
 import { addToCart, getCatalog, imageUrl, money, pickLang, readCart, setQty } from '@/lib/shop';
@@ -118,9 +119,11 @@ export default function DukanProductPage() {
           <ul className="grid gap-2 text-lg">
             <li className="flex items-center gap-2"><Truck size={22} strokeWidth={2.4} aria-hidden="true" />{t('shop.freeDelivery')}</li>
             {data?.settings.cash_on_delivery === true && <li className="flex items-center gap-2"><Wallet size={22} strokeWidth={2.4} aria-hidden="true" />{t('shop.codAvail')}</li>}
+            <li className="flex items-center gap-2"><RotateCcw size={22} strokeWidth={2.4} aria-hidden="true" /><Link to="/dhoran/refunds" className="underline underline-offset-4">{t('shop.returnsShort')}</Link></li>
           </ul>
 
           {pickLang(p, 'description', lang) && <p className="text-lg leading-relaxed whitespace-pre-line">{pickLang(p, 'description', lang)}</p>}
+          <p className="text-base text-ink/65">{t('shop.sellerLine', { name: data ? businessFrom(data.settings).name : '' })}</p>
           {specs.length > 0 && (
             <table className="w-full text-lg border-2 border-line rounded-xl overflow-hidden border-separate border-spacing-0 bg-white">
               <tbody>

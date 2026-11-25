@@ -157,6 +157,11 @@ export default function CheckoutPage() {
           {busy ? t('shop.co.placing') : method === 'razorpay' ? t('shop.co.placePay', { amt: money(total, lang) }) : method === 'upi' ? t('shop.co.placeUpi') : t('shop.co.place')}
         </button>
         <p className="-mt-3 text-base text-ink/65">{t('shop.co.remember')}</p>
+        <p className="-mt-3 text-base text-ink/65">
+          {t('shop.co.agree1')} <Link to="/dhoran/terms" className="underline">{t('footer.terms')}</Link>,{' '}
+          <Link to="/dhoran/shipping" className="underline">{t('footer.shipping')}</Link> {t('shop.co.agreeAnd')}{' '}
+          <Link to="/dhoran/refunds" className="underline">{t('footer.refunds')}</Link> {t('shop.co.agree2')}
+        </p>
       </form>
     </div>
   );
