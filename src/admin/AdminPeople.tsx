@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { getPublicSettings } from '@/lib/api';
 import { communityLinkFrom } from '@/lib/community';
 import { btnDanger, btnQuiet, Card, downloadCsv } from '@/admin/ui';
+import { useWhatsAppComposer, type Person } from '@/admin/useWhatsAppComposer';
 
 type Sub = { id: string; name: string; phone: string; city: string; interest: string; source_page: string; copies: number | null; note: string | null; created_at: string };
 type Msg = { id: string; name: string; phone: string; message: string; created_at: string };
@@ -67,6 +68,29 @@ export default function AdminPeople() {
   const list = useMemo(() => uniqueByPhone((subs ?? []).filter((s) => !isBook(s))), [subs]);
   const copies = book.reduce((t, s) => t + (s.copies ?? 0), 0); // only the old book form asked how many copies
   const isNew = (iso: string) => !!seen && iso > seen;
+
+  // WhatsApp messages for the two lists
+  const site = typeof window !== 'undefined' ? window.location.origin : 'https://chalakheluya.com';
+  const listWa = useWhatsAppComposer(
+    [
+      ...(community ? [{ id: 'invite', label: 'Invite to community', text: `नमस्कार{name}! चला खेळूया चे रोजचे कोडे आता आमच्या WhatsApp community मध्ये मिळते. इथे Join करा: ${community}` }] : []),
+      { id: 'today', label: 'Today’s puzzle', text: `नमस्कार{name}! आजचे चला खेळूया कोडे तयार आहे 🧩 मोठ्या अक्षरात, फोनवर — इथे खेळा: ${site}` },
+      { id: 'shop', label: 'Book in the shop', text: `नमस्कार{name}! चला खेळूया चे मोठ्या अक्षरातील मराठी कोड्यांचे पुस्तक आता दुकानात आहे 📖 घरपोच, डिलिव्हरी मोफत. इथे पाहा: ${site}/dukan` },
+    ],
+    'list',
+  );
+  const bookWa = useWhatsAppComposer(
+    [
+      { id: 'thanks', label: 'Say thanks', text: 'नमस्कार{name}! चला खेळूया च्या {product} मध्ये रस दाखवल्याबद्दल धन्यवाद. ते उपलब्ध होताच आम्ही तुम्हाला इथेच कळवू. 🙏' },
+      { id: 'onsale', label: 'Now on sale', text: 'नमस्कार{name}! तुम्ही विचारलेले {product} आता चला खेळूया दुकानात उपलब्ध आहे 🎉 घरपोच, डिलिव्हरी मोफत. इथे घ्या: {link}' },
+    ],
+    'book',
+  );
+  const personOf = (s: Sub): Person => ({
+    id: s.id, phone: s.phone, name: s.name,
+    product: isBook(s) ? `"${productOf(s)}"` : '',
+    link: s.source_page.startsWith('/dukan/') ? `${site}${s.source_page}` : `${site}/dukan`,
+  });
   const newCount = (rows: { created_at: string }[]) => rows.filter((r) => isNew(r.created_at)).length;
 
   const removeSub = async (s: Sub) => {
@@ -97,10 +121,7 @@ export default function AdminPeople() {
   );
 
   const loading = !subs || !msgs;
-  const thankText = (s: Sub) =>
-    `नमस्कार${s.name ? ' ' + s.name : ''}! चला खेळूया च्या ${s.source_page.startsWith('/dukan/') ? `"${productOf(s)}" मध्ये` : 'मोठ्या अक्षरातील शब्दकोडी पुस्तकात'} रस दाखवल्याबद्दल धन्यवाद. ते उपलब्ध होताच आम्ही तुम्हाला इथेच कळवू. 🙏`;
-  const inviteText = (s: Sub) =>
-    `नमस्कार${s.name ? ' ' + s.name : ''}! चला खेळूया चे रोजचे कोडे आता आमच्या WhatsApp community मध्ये मिळते. इथे Join करा: ${community}`;
+
 
   return (
     <div>
@@ -125,7 +146,8 @@ export default function AdminPeople() {
                   Download CSV
                 </button>
               </div>
-              <p className="mt-1 text-sm text-ink/60">People who tapped “मला कळवा” on a coming-soon product (and the old book form). These are your first buyers — message them when it goes on sale. The “Say thanks” button opens WhatsApp with a ready message.</p>
+              <p className="mt-1 text-sm text-ink/60">People who tapped “मला कळवा” on a coming-soon product (and the old book form). These are your first buyers — message them when it goes on sale. Pick a message below and press “Send on WhatsApp” next to each person.</p>
+              {book.length > 0 && <div className="mt-4">{bookWa.box(book.map(personOf))}</div>}
               {book.length === 0 ? (
                 <Card className="mt-4">No one yet. Coming-soon products have a “मला कळवा” button. Shop visits are counted under Stats → Shop.</Card>
               ) : (
@@ -143,7 +165,7 @@ export default function AdminPeople() {
                       </div>
                       {s.note && !s.source_page.startsWith('/dukan/') && <p className="mt-2 rounded-xl bg-white border border-line p-3 whitespace-pre-line">“{s.note}”</p>}
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <a className={btnQuiet} href={waLink(s.phone, thankText(s))} target="_blank" rel="noreferrer">Say thanks on WhatsApp</a>
+                        {bookWa.buttons(personOf(s))}
                         <button className={`${btnDanger} ml-auto`} onClick={() => removeSub(s)}>Remove</button>
                       </div>
                     </Card>
@@ -162,36 +184,33 @@ export default function AdminPeople() {
                 </button>
               </div>
               <p className="mt-1 text-sm text-ink/60">
-                People who asked for puzzles on WhatsApp before the community existed (form at /suchana). Few new sign-ups are expected now — the community does this job.
-                {community ? ' Use “Invite to community” to move each of them in.' : ' Switch on the WhatsApp community in Settings to get an “Invite” button here.'}
+                People who asked for puzzles on WhatsApp (the “नवीन कोडी कळवा” form at /suchana, linked at the bottom of every page).
+                {' '}Pick a message below (invite to the community, today’s puzzle, the book, or your own) and press “Send on WhatsApp” next to each person.
               </p>
               {list.length === 0 ? (
                 <Card className="mt-4">No one on this list.</Card>
               ) : (
-                <div className="mt-4 overflow-x-auto rounded-2xl border-2 border-ink bg-paper">
-                  <table className="w-full text-left">
-                    <thead className="bg-cream">
-                      <tr>{['When', 'Name', 'WhatsApp', 'City', 'Wants', ''].map((h) => <th key={h} className="p-3">{h}</th>)}</tr>
-                    </thead>
-                    <tbody>
-                      {list.map((s) => (
-                        <tr key={s.id} className={`border-t border-line ${isNew(s.created_at) ? 'bg-[#E9F6EC]' : ''}`}>
-                          <td className="p-3 whitespace-nowrap text-sm">{when(s.created_at)}</td>
-                          <td className="p-3">{s.name || '–'}</td>
-                          <td className="p-3 font-bold whitespace-nowrap">{s.phone}</td>
-                          <td className="p-3">{s.city || '–'}</td>
-                          <td className="p-3">{s.interest === 'both' ? 'puzzles + book' : s.interest}</td>
-                          <td className="p-3">
-                            <div className="flex gap-2 justify-end">
-                              {community && <a className={`${btnQuiet} !py-1 whitespace-nowrap`} href={waLink(s.phone, inviteText(s))} target="_blank" rel="noreferrer">Invite to community</a>}
-                              <button className={`${btnDanger} !py-1`} onClick={() => removeSub(s)}>Remove</button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <>
+                <div className="mt-4">{listWa.box(list.map(personOf))}</div>
+                <ul className="mt-3 grid gap-2">
+                  {list.map((s) => (
+                    <li key={s.id} className={`rounded-2xl border-2 border-ink p-3 ${isNew(s.created_at) ? 'bg-[#E9F6EC]' : 'bg-paper'}`}>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <b className="text-lg">{s.name || 'No name'}</b>
+                        <a className="font-bold tabular-nums underline" href={`tel:${s.phone}`}>{s.phone}</a>
+                        {s.city && <span className="text-ink/70">{s.city}</span>}
+                        <span className="text-sm text-ink/60">{s.interest === 'both' ? 'puzzles + book' : s.interest}</span>
+                        {isNew(s.created_at) && <span className="rounded-full bg-green text-white text-xs px-2 py-0.5">new</span>}
+                        <span className="ml-auto text-sm text-ink/55">{when(s.created_at)}{s.times > 1 ? ` · signed up ${s.times}×` : ''}</span>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {listWa.buttons(personOf(s))}
+                        <button className={`${btnDanger} !py-1 ml-auto`} onClick={() => removeSub(s)}>Remove</button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                </>
               )}
             </section>
           )}
