@@ -177,6 +177,16 @@ export async function getOrder(orderNo: string, key: string): Promise<Order | nu
   if (error) throw error;
   return one<Order>(data);
 }
+/** Unfinished checkout / "please contact me": saved so the shop can help on WhatsApp. Never throws. */
+export async function saveLead(l: { phone: string; name?: string; city?: string; pincode?: string; items?: CartLine[]; source?: 'checkout' | 'ask'; question?: string }) {
+  if (!supabase) return;
+  try {
+    await supabase.rpc('shop_save_lead', { p: { ...l, items: (l.items ?? []).map((i) => ({ id: i.id, qty: i.qty })), player_id: playerId() } });
+  } catch {
+    /* not important enough to bother the customer */
+  }
+}
+
 /** Orders for a mobile number + delivery pincode (the "where is my order" page). */
 export async function trackOrders(phone: string, pincode: string) {
   if (!supabase) return [];

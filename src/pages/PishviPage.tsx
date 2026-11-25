@@ -5,6 +5,7 @@ import { useAsync } from '@/lib/useAsync';
 import { getCatalog, imageUrl, money, pickLang, setQty, useCart } from '@/lib/shop';
 import { mrDigits } from '@/lib/dates';
 import Illustration from '@/components/Illustration';
+import AskButton from '@/components/AskButton';
 
 /** The cart: what's in it, change quantities, total, then checkout. */
 export default function PishviPage() {
@@ -62,6 +63,7 @@ export default function PishviPage() {
         <div className="flex justify-between font-heading font-extrabold text-2xl"><span>{t('shop.total')}</span><span>{money(total, lang)}</span></div>
       </div>
       <Link to="/checkout" className="btn btn-primary w-full mt-4 !min-h-[4.5rem] !text-[1.5rem]">{t('shop.checkout')}</Link>
+      <AskButton about={lines.map((l) => `"${l.p!.name_mr}" × ${l.qty}`).join(', ')} items={lines.map(({ id, qty }) => ({ id, qty }))} className="w-full mt-3" />
     </div>
   );
 }

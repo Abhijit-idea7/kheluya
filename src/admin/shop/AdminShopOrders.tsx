@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { btnDanger, btnPrimary, btnQuiet, Card, Field, input } from '@/admin/ui';
 import { rpc, rs, when, METHOD_LABEL, PAY_LABEL, STATUS_LABEL, STATUS_TONE } from '@/admin/shop/rpc';
 import type { Order } from '@/lib/shop';
+import { Link } from 'react-router-dom';
+import type { Followup } from '@/admin/shop/AdminShopFollowups';
 
 type Row = { order_no: string; status: string; payment_method: string; payment_status: string; total_paise: number; created_at: string; ship_name: string; ship_phone: string; ship_city: string; ship_state: string; tracking_no: string; upi_ref: string | null; items: number };
 type Money = { paid: number; cod_collected: number; cod_pending: number; to_check: number; refund_due: number };
@@ -21,6 +23,8 @@ export default function AdminShopOrders() {
   const [data, setData] = useState<List | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [err, setErr] = useState('');
+  const [follow, setFollow] = useState<Followup[]>([]);
+  useEffect(() => { rpc<Followup[]>('admin_shop_followups').then((d) => setFollow(Array.isArray(d) ? d : [])).catch(() => setFollow([])); }, []);
   const load = () =>
     rpc<List>('admin_shop_orders', { p_status: filter || null, p_search: search || null, p_limit: 300 })
       .then((d) => setData({ counts: d?.counts ?? {}, orders: d?.orders ?? [], money: d?.money }))
@@ -44,6 +48,12 @@ export default function AdminShopOrders() {
           </button>
         ))}
       </div>
+      {follow.filter((f) => f.status === 'open').length > 0 && (
+        <Link to="/admin/shop/followup" className="rounded-2xl border-[3px] border-orange bg-orange-soft p-3 font-bold">
+          {follow.filter((f) => f.status === 'open').length} people to follow up on WhatsApp
+          {follow.some((f) => f.stage === 'ask' && f.status === 'open') ? ' — including someone who asked us to contact them' : ''} →
+        </Link>
+      )}
       {(c.to_check ?? 0) > 0 && (
         <button className="text-left rounded-2xl border-[3px] border-green bg-green-soft p-3 font-bold" onClick={() => setFilter('to_check')}>
           {c.to_check} UPI payment{c.to_check === 1 ? '' : 's'} to check ({rs(data?.money?.to_check ?? 0)}) — look in your bank app, then press “Payment received” on the order.

@@ -8,6 +8,7 @@ import { useAsync } from '@/lib/useAsync';
 import { addToCart, getCatalog, imageUrl, money, pickLang } from '@/lib/shop';
 import Illustration from '@/components/Illustration';
 import InterestButton from '@/components/InterestButton';
+import AskButton from '@/components/AskButton';
 import { mrDigits } from '@/lib/dates';
 
 /** One product: pictures, price, description and details, quantity, add to cart / buy now. */
@@ -113,6 +114,7 @@ export default function DukanProductPage() {
             </>
           )}
 
+          {can && <AskButton about={`"${p.name_mr}" (${money(p.price_paise, 'mr')})`} items={[{ id: p.id, qty }]} className="w-full lg:w-auto lg:self-start" />}
           <ul className="grid gap-2 text-lg">
             <li className="flex items-center gap-2"><Truck size={22} strokeWidth={2.4} aria-hidden="true" />{t('shop.freeDelivery')}</li>
             {data?.settings.cash_on_delivery === true && <li className="flex items-center gap-2"><Wallet size={22} strokeWidth={2.4} aria-hidden="true" />{t('shop.codAvail')}</li>}

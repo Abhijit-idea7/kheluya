@@ -500,7 +500,7 @@
       "you": "1. Your details",
       "name": "Full name",
       "phone": "WhatsApp number",
-      "phoneHint": "We'll send order updates to this number.",
+      "phoneHint": "We'll send order updates to this number. If the order is left unfinished, we may contact you to help.",
       "email": "Email (optional)",
       "addr": "2. Delivery address",
       "line1": "House / flat no., building",
@@ -626,6 +626,16 @@
     "returnsShort": "Damaged or wrong item? Replaced or refunded within 7 days",
     "sellerLine": "Sold by {{name}} · Country of origin: India",
     "addShort": "Add to cart",
-    "trackLink": "Where is my order?"
+    "trackLink": "Where is my order?",
+    "ask": {
+      "button": "Have a question? Ask us",
+      "title": "Want to ask something before paying?",
+      "whatsapp": "Ask us on WhatsApp",
+      "or": "or",
+      "callMe": "We'll contact you",
+      "question": "Your question (optional)",
+      "send": "Please contact me",
+      "done": "Thank you! We'll contact you soon on WhatsApp or phone."
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
@@ -6,10 +6,11 @@ import FormField, { inputClass } from '@/components/FormField';
 import { getPublicSettings } from '@/lib/api';
 import { useAsync } from '@/lib/useAsync';
 import {
-  clearCart, getCatalog, money, payOnline, pickLang, placeOrder, savedCustomer, saveCustomer, shopError, STATES, STATES_MR, useCart,
+  clearCart, getCatalog, saveLead, money, payOnline, pickLang, placeOrder, savedCustomer, saveCustomer, shopError, STATES, STATES_MR, useCart,
   type Customer, type Pay,
 } from '@/lib/shop';
 import { mrDigits } from '@/lib/dates';
+import AskButton from '@/components/AskButton';
 
 const EMPTY: Customer = { name: '', phone: '', email: '', address: { line1: '', line2: '', landmark: '', city: '', state: 'Maharashtra', pincode: '' } };
 
@@ -24,6 +25,7 @@ export default function CheckoutPage() {
   const buyId = params.get('buy');
   const buyQty = Math.max(1, Math.min(100, Number(params.get('qty')) || 1));
   const [placing, setPlacing] = useState(false);
+  const leadKey = useRef('');
   const { data, loading } = useAsync(async () => {
     const [s, c] = await Promise.all([getPublicSettings(), getCatalog()]);
     return { s, c };
@@ -36,6 +38,23 @@ export default function CheckoutPage() {
   const [note, setNote] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // Cart recovery: once a name and a valid mobile are typed, remember this unfinished checkout (a second after typing stops)
+  const leadPhone = c.phone.replace(/[^0-9]/g, '').slice(-10);
+  const leadItems = (buyId ? [{ id: buyId, qty: buyQty }] : cart).map((l) => `${l.id}:${l.qty}`).join(',');
+  useEffect(() => {
+    if (!/^[6-9][0-9]{9}$/.test(leadPhone) || c.name.trim().length < 2 || !leadItems) return;
+    const key = `${leadPhone}|${c.name.trim()}|${c.address.city.trim()}|${c.address.pincode}|${leadItems}`;
+    if (key === leadKey.current) return;
+    const tm = setTimeout(() => {
+      leadKey.current = key;
+      saveLead({
+        phone: leadPhone, name: c.name.trim(), city: c.address.city.trim(), pincode: c.address.pincode, source: 'checkout',
+        items: leadItems.split(',').map((x) => ({ id: x.split(':')[0], qty: Number(x.split(':')[1]) })),
+      });
+    }, 1200);
+    return () => clearTimeout(tm);
+  }, [leadPhone, c.name, c.address.city, c.address.pincode, leadItems]);
 
   if (loading || !data) return <div className="max-w-xl mx-auto px-4 py-10"><div className="sticker h-96 animate-pulse" aria-hidden="true" /></div>;
   const s = data.s;
@@ -152,6 +171,8 @@ export default function CheckoutPage() {
           {upiOn && radio('upi', t('shop.co.upi'), t('shop.co.upiHint'))}
           {codOn && radio('cod', t('shop.co.cod'), t('shop.co.codHint'), !codOk, codOk ? '' : t('shop.co.codLimit', { amt: money(codMax, lang) }))}
         </fieldset>
+
+        <AskButton about={lines.map((l) => `"${l.p!.name_mr}" × ${l.qty}`).join(', ')} items={lines.map(({ id, qty }) => ({ id, qty }))} className="w-full" />
 
         <FormField label={t('shop.co.note')}>
           <textarea className={`${inputClass} min-h-[5rem]`} value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} />
